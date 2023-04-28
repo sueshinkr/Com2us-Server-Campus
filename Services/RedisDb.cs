@@ -203,7 +203,7 @@ public class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError($"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailException}");
+            _logger.ZLogError(ex, $"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailException}");
             return new Tuple<ErrorCode, byte[]>(ErrorCode.NotificationLoadingFailException, null);
         }
     }

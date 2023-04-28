@@ -74,6 +74,8 @@ public class Login : ControllerBase
             return response;
         }
 
+        _logger.ZLogInformation($"{request.Email} Login Success");
+
         // 공지 읽어오기
         (errorCode, response.notification) = await _redisDb.NotificationLoading();
         if (errorCode != ErrorCode.None)
@@ -82,8 +84,6 @@ public class Login : ControllerBase
             return response;
             // 리턴하는게 맞나?
         }
-
-        _logger.ZLogInformation($"{request.Email} Login Success");
 
         return response;
     }
