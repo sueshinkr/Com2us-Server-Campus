@@ -14,7 +14,8 @@ public class AuthUser
     public string Email { get; set; } = "";
     public string AuthToken { get; set; } = "";
     public Int64 AccountId { get; set; } = 0;
-    public string State { get; set; } = ""; // enum UserState    
+    public string State { get; set; } = ""; // enum UserState
+    public DateTime LastLogin { get; set; }
 }
 
 public enum UserState

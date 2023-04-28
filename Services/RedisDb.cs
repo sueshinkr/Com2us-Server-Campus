@@ -66,8 +66,8 @@ public class RedisDb : IRedisDb
             Email = email,
             AuthToken = authToken,
             AccountId = accountId,
-            State = UserState.Default.ToString()
-            // LastLogin = null
+            State = UserState.Default.ToString(),
+            LastLogin = DateTime.Now
         };
 
         try
