@@ -15,7 +15,11 @@
     VerifyAccountFailException = 2005,
     VerifyGameFailNoGameData = 2006,
     VerifyGameDataFailException = 2007,
-    RegistUserFailException = 2007,
+    RegistUserFailException = 2008,
+    NotificationLoadingFailNoUrl = 2009,
+    NotificationLoadingFailGetImageFromUrl = 2010,
+    NotificationLoadingFailException = 2011,
+
 
     InsertItemFailException = 3001,
     DataLoadingFailException = 3002,

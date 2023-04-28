@@ -75,8 +75,13 @@ public class Login : ControllerBase
         }
 
         // 공지 읽어오기
-        // 얘는 실패할경우 에러처리를 별개로 하는게 낫겠지? 로그인 실패는 아니니...
-        // await _RedisDb.NotificaitonLoading(request.Email)
+        (errorCode, response.notification) = await _redisDb.NotificationLoading();
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+            // 리턴하는게 맞나?
+        }
 
         _logger.ZLogInformation($"{request.Email} Login Success");
 
@@ -108,5 +113,6 @@ public class PkLoginResponse
     public ErrorCode Result { get; set; }
     public string Authtoken { get; set; }
     public UserData userData { get; set; }
-    public UserItem userItem { get; set; } 
+    public UserItem userItem { get; set; }
+    public byte[] notification { get; set; }
 }

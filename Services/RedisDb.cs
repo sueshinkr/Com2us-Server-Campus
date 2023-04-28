@@ -89,7 +89,7 @@ public class RedisDb : IRedisDb
         return ErrorCode.None;
     }
 
-    public async Task<ErrorCode> VerifyGameDataAsync(double appVersion, double masterDataVersion)
+    public async Task<ErrorCode> VerifyGameDataAsync(double appVersion, double masterVersion)
     {
         try
         {
@@ -101,7 +101,7 @@ public class RedisDb : IRedisDb
                 return ErrorCode.VerifyGameFailNoGameData;
             }
 
-            if (gamedata.Value.AppVersion != appVersion || gamedata.Value.MasterVersion != masterDataVersion)
+            if (gamedata.Value.AppVersion != appVersion || gamedata.Value.MasterVersion != masterVersion)
             {
                 return ErrorCode.LoginFailGameDataNotMatch;
             }
@@ -173,6 +173,42 @@ public class RedisDb : IRedisDb
             return false;
         }
     }
+
+    public async Task<Tuple<ErrorCode, byte[]>> NotificationLoading()
+    {
+        try
+        {
+            var redis = new RedisString<string>(_redisConn, "notification", null);
+            var notificationUrl = await redis.GetAsync();
+            if (notificationUrl.Value == null)
+            {
+                _logger.ZLogError($"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailNoUrl}");
+                return new Tuple<ErrorCode, byte[]>(ErrorCode.NotificationLoadingFailNoUrl, null);
+            }
+
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.GetAsync(notificationUrl.Value);
+                if (response.IsSuccessStatusCode)
+                {
+                    var imageBytes = await response.Content.ReadAsByteArrayAsync();
+                    return new Tuple<ErrorCode, byte[]>(ErrorCode.None, imageBytes);
+                }
+                else
+                {
+                    _logger.ZLogError($"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailGetImageFromUrl}");
+                    return new Tuple<ErrorCode, byte[]>(ErrorCode.NotificationLoadingFailGetImageFromUrl, null);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError($"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailException}");
+            return new Tuple<ErrorCode, byte[]>(ErrorCode.NotificationLoadingFailException, null);
+        }
+    }
+
+
 
     public TimeSpan LoginTimeSpan()
     {

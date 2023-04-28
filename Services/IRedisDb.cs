@@ -10,4 +10,5 @@ public interface IRedisDb
     public Task<AuthUser> GetUserAsync(string accountid);
     public Task<bool> SetUserReqLockAsync(string accountid);
     public Task<bool> DelUserReqLockAsync(string userLockKey);
+    public Task<Tuple<ErrorCode, byte[]>> NotificationLoading();
 }
