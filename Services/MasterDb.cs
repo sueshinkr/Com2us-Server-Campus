@@ -18,7 +18,7 @@ public class MasterDb : IMasterDb
 
     readonly ILogger<MasterDb> _logger;
 
-    public GameData GameDataInfo { get; }
+    public VersionData VersionDataInfo { get; }
     public List<Item> ItemInfo { get; }
     public List<ItemAttribute> ItemAttributeInfo { get; }
     public List<AttendanceReward> AttendanceRewardInfo { get; }
@@ -41,7 +41,7 @@ public class MasterDb : IMasterDb
 
         _logger.ZLogInformation("MasterDb Connected");
 
-        GameDataInfo = _queryFactory.Query("GameData").Select().FirstOrDefault<GameData>();
+        VersionDataInfo = _queryFactory.Query("VersionData").Select().FirstOrDefault<VersionData>();
         ItemInfo = _queryFactory.Query("Item").Select().Get<Item>() as List<Item>;
         ItemAttributeInfo = _queryFactory.Query("ItemAttribute").Select().Get<ItemAttribute>() as List<ItemAttribute>;
         AttendanceRewardInfo = _queryFactory.Query("AttendanceReward").Select().Get<AttendanceReward>() as List<AttendanceReward>;
@@ -50,5 +50,7 @@ public class MasterDb : IMasterDb
         StageEnemyInfo = _queryFactory.Query("StageEnemy").Select().Get<StageEnemy>() as List<StageEnemy>;
 
         _logger.ZLogInformation("MasterDb Loading Completed");
+
+        _dbConn.Close();
     }
 }

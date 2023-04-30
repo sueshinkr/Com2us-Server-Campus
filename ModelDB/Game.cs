@@ -3,6 +3,7 @@
 public class UserData
 {
     public Int64 AccountId { get; set; }
+    public Int64 UserId { get; set; }
     public Int64 Level { get; set; }
     public Int64 Exp { get; set; }
     public Int64 Money { get; set; }
@@ -12,22 +13,29 @@ public class UserData
 
 public class UserItem
 {
-    public List<UserItem_Consumable> Consumable { get; set; }
-    public List<UserItem_Equipment> Equipment { get; set; }
-}
-
-public class UserItem_Consumable
-{
-    public Int64 AccountId { get; set; }
+    public Int64 UserId { get; set; }
+    public Int64 ItemId { get; set; }
     public Int64 ItemCode { get; set; }
     public Int64 ItemCount { get; set; }
+    public Int64 EnhanceCount { get; set; }
+    public DateTime ObtainedAt { get; set; }
 }
 
-public class UserItem_Equipment
+public class MailData
 {
-    public Int64 UniqueId { get; set; }
-    public Int64 AccountId { get; set; }
+    public Int64 MailId { get; set; }
+    public Int64 UserId { get; set; }
+    public string SenderName { get; set; }
+    
+    public string Title { get; set; }
+    public string Content { get; set; }
+
     public Int64 ItemCode { get; set; }
-    public DateTime ObtainDate { get; set; }
-    public Int64 EnhanceCount { get; set; }
+    public Int64 ItemCount { get; set; }
+
+    public bool IsRead { get; set; }
+    public bool IsReceive { get; set; }
+
+    public DateTime ObtainedAt { get; set; }
+    public DateTime ExpiredAt { get; set; }
 }

@@ -19,12 +19,18 @@ public class AccountDb : IAccountDb
 
         var DbConnectString = configuration.GetSection("DBConnection")["AccountDb"];
         _dbConn = new MySqlConnection(DbConnectString);
+        _dbConn.Open();
 
         var compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, compiler);
 
         _logger.ZLogInformation("AccountDb Connected");
+    }
 
+    public void Dispose()
+    {
+        _dbConn.Close();
+        GC.SuppressFinalize(this);
     }
 
     public async Task<Tuple<ErrorCode, Int64>> CreateAccountAsync(string email, string password)
@@ -34,14 +40,14 @@ public class AccountDb : IAccountDb
             var saltValue = Security.RandomString(64);
             var hashedPassword = Security.MakeHashedPassword(saltValue, password);
 
-            await _queryFactory.Query("account").InsertAsync(new
+            var accountid = await _queryFactory.Query("account").InsertGetIdAsync<Int64>(new
             {
                 Email = email,
                 SaltValue = saltValue,
                 HashedPassword = hashedPassword
             });
 
-            var accountid = await _queryFactory.Query("account").Where("Email", email).Select("AccountId").FirstOrDefaultAsync<Int64>();
+            //var accountid = await _queryFactory.Query("account").Where("Email", email).Select("AccountId").FirstOrDefaultAsync<Int64>();
 
             return new Tuple<ErrorCode, Int64>(ErrorCode.None, accountid);
         }

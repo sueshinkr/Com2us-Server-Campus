@@ -42,7 +42,7 @@ public class CheckUserAuth
 
         context.Request.EnableBuffering();
 
-        string accountId;
+        Int64 accountId;
         string authToken;
         double appVersion;
         double masterVersion;
@@ -68,7 +68,7 @@ public class CheckUserAuth
             }
 
             // 게임 데이터 확인
-            if (await _redisDb.VerifyGameDataAsync(appVersion, masterVersion) != ErrorCode.None)
+            if (await _redisDb.VerifyVersionDataAsync(appVersion, masterVersion) != ErrorCode.None)
             {
                 await SetJsonResponse(context, ErrorCode.CheckUserGameDataNotMatch);
                 return;
@@ -116,11 +116,11 @@ public class CheckUserAuth
         return true;
     }
 
-    public bool IsInvalidJsonFormat(HttpContext context, JsonDocument document, out string accountId, out string authToken, out double appVersion, out double masterVersion)
+    public bool IsInvalidJsonFormat(HttpContext context, JsonDocument document, out Int64 accountId, out string authToken, out double appVersion, out double masterVersion)
     {
         try
         {
-            accountId = document.RootElement.GetProperty("AccountId").GetString();
+            accountId = document.RootElement.GetProperty("AccountId").GetInt64();
             authToken = document.RootElement.GetProperty("AuthToken").GetString();
             appVersion = document.RootElement.GetProperty("AppVersion").GetDouble();
             masterVersion = document.RootElement.GetProperty("MasterVersion").GetDouble();
@@ -128,7 +128,7 @@ public class CheckUserAuth
         }
         catch
         {
-            accountId = ""; authToken = ""; appVersion = 0; masterVersion = 0;
+            accountId = 0; authToken = ""; appVersion = 0; masterVersion = 0;
             return true;
         }
     }

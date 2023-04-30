@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using MySqlConnector;
 using SqlKata.Execution;
 using WebAPIServer.ModelDB;
@@ -28,11 +29,17 @@ public class GameDb : IGameDb
         _logger.ZLogInformation("GameDb Connected");
     }
 
-    public async Task<ErrorCode> CreateBasicData(Int64 accountid)
+    public void Dispose()
+    {
+        _dbConn.Close();
+        GC.SuppressFinalize(this);
+    }
+
+    public async Task<ErrorCode> CreateBasicDataAsync(Int64 accountid)
     {
         try
         {
-            await _queryFactory.Query("UserData").InsertAsync(new
+            var userid = await _queryFactory.Query("UserData").InsertGetIdAsync<Int64>(new
             {
                 AccountId = accountid,
                 Level = 1,
@@ -42,10 +49,10 @@ public class GameDb : IGameDb
                 ClearStage = 0
             });
 
-            List<(Int64, Int64)> defaultitem = new List<(Int64, Int64)> { (2, 1), (4, 1), (5, 1), (6, 10) };
+            List<(Int64, Int64)> defaultitem = new List<(Int64, Int64)> { (2, 1), (4, 1), (5, 1), (6, 401) };
             foreach ((Int64 itemcode, Int64 count) in defaultitem)
             {
-                var errorCode = await InsertItem(accountid, itemcode, count);
+                var errorCode = await InsertItem(userid, itemcode, count);
                 if (errorCode != ErrorCode.None)
                 {
                     return errorCode;
@@ -56,12 +63,12 @@ public class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[CreateBasicData] ErrorCode: {ErrorCode.CreateBasicDataFailException}, AccountId: {accountid}");
+            _logger.ZLogError(ex, $"[CreateBasicDataAsync] ErrorCode: {ErrorCode.CreateBasicDataFailException}, AccountId: {accountid}");
             return ErrorCode.CreateBasicDataFailException;
         }
     }
 
-    public async Task<ErrorCode> InsertItem(Int64 accountid, Int64 itemcode, Int64 count)
+    public async Task<ErrorCode> InsertItem(Int64 userid, Int64 itemcode, Int64 count)
     {
         try
         {
@@ -69,17 +76,54 @@ public class GameDb : IGameDb
 
             if (item.Type == "소모품")
             {
-                string query = $"INSERT INTO UserItem_Consumable (AccountId, ItemCode, ItemCount) VALUES ({accountid}, {itemcode}, {count}) ON DUPLICATE KEY UPDATE ItemCount = ItemCount + {count}";
-                await _queryFactory.StatementAsync(query);
+                var max = 100;
+                // db 자체에서 max 처리하는 방법도 있지 않을까?
+
+                while (count > 0)
+                {
+
+                    var currentCount = await _queryFactory.Query("UserItem").Where("ItemCode", item.Code).Where("ItemCount", "<", 100).Select("ItemCount").FirstOrDefaultAsync<Int64>();
+                    var insertcount = Math.Min(currentCount + count, max);
+
+                    if (currentCount == 0)
+                    {
+                        await _queryFactory.Query("UserItem").InsertAsync(new
+                        {
+                            UserId = userid,
+                            ItemCode = itemcode,
+                            ItemCount = insertcount
+                        });
+                    }
+                    else
+                    {
+                        _queryFactory.Query("UserItem").Where("ItemCode", item.Code).Where("ItemCount", "<", 100).Select("ItemCount").Update(new
+                        {
+                            Itemcount = insertcount
+                        });
+                    }
+
+                    count -= insertcount;
+
+                    if (count > 0)
+                    {
+                        insertcount = Math.Min(count, max);
+                        await _queryFactory.Query("UserItem").InsertAsync(new
+                        {
+                            UserId = userid,
+                            ItemCode = itemcode,
+                            ItemCount = insertcount
+                        });
+                        count -= insertcount;
+                    }
+                }
             }
             else // 장비
             {
-                await _queryFactory.Query("UserItem_Equipment").InsertAsync(new
+                await _queryFactory.Query("UserItem").InsertAsync(new
                 {
-                    AccountId = accountid,
+                    UserId = userid,
                     ItemCode = itemcode,
-                    ObtainDate = DateTime.Now,
-                    EnhanceCount = 0
+                    ItemCount = count
                 });
             }
 
@@ -87,7 +131,7 @@ public class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[InsertItem] ErrorCode: {ErrorCode.InsertItemFailException}, AccountId: {accountid}, ItemCode: {itemcode}");
+            _logger.ZLogError(ex, $"[InsertItem] ErrorCode: {ErrorCode.InsertItemFailException}, UserId: {userid}, ItemCode: {itemcode}");
             return ErrorCode.InsertItemFailException;
         }
     }
@@ -101,49 +145,47 @@ public class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[DataLoading] ErrorCode: {ErrorCode.DataLoadingFailException}, AccountId: {accountid}");
-            return new Tuple<ErrorCode, UserData>(ErrorCode.DataLoadingFailException, null);
+            _logger.ZLogError(ex, $"[DataLoading] ErrorCode: {ErrorCode.UserDataLoadingFailException}, AccountId: {accountid}");
+            return new Tuple<ErrorCode, UserData>(ErrorCode.UserDataLoadingFailException, null);
         }
     }
 
-    public async Task<Tuple<ErrorCode, UserItem>> UserItemLoading(Int64 accountid)
+    public async Task<Tuple<ErrorCode, List<UserItem>>> UserItemLoading(Int64 userid)
     {
-        var useritem = new UserItem();
+        var useritem = new List<UserItem>();
 
         try
         {
-            useritem.Consumable = await _queryFactory.Query("UserItem_Consumable").Where("AccountId", accountid).GetAsync<UserItem_Consumable>() as List<UserItem_Consumable>;
-            useritem.Equipment = await _queryFactory.Query("UserItem_Equipment").Where("AccountId", accountid).GetAsync<UserItem_Equipment>() as List<UserItem_Equipment>;
+            useritem = await _queryFactory.Query("UserItem").Where("UserId", userid).GetAsync<UserItem>() as List<UserItem>;
 
-            return new Tuple<ErrorCode, UserItem>(ErrorCode.None, useritem);
+            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.None, useritem);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[ItemLoading] ErrorCode: {ErrorCode.ItemLoadingFailException}, AccountId: {accountid}");
-            return new Tuple<ErrorCode, UserItem>(ErrorCode.ItemLoadingFailException, null);
+            _logger.ZLogError(ex, $"[UserItemLoading] ErrorCode: {ErrorCode.UserItemLoadingFailException}, UserId: {userid}");
+            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.UserItemLoadingFailException, null);
+        }
+    }
+
+    public async Task<Tuple<ErrorCode, List<MailData>>> MailDataLoadingAsync(Int64 userid, Int64 pagenumber)
+    {
+        var maildata = new List<MailData>();
+
+        try
+        {
+            maildata = await _queryFactory.Query("MailData").Where("UserId", userid).Offset((pagenumber - 1) * 20).Limit(20).GetAsync<MailData>() as List<MailData>;
+            if (maildata.Count == 0)
+            {
+                _logger.ZLogError($"[MailDataLoading] ErrorCode: {ErrorCode.MailDataLoadingFailNoData}, UserId: {userid}, PageNumber: {pagenumber}");
+                return new Tuple<ErrorCode, List<MailData>>(ErrorCode.MailDataLoadingFailNoData, maildata);
+            }
+
+            return new Tuple<ErrorCode, List<MailData>>(ErrorCode.None, maildata);
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, $"[MailDataLoading] ErrorCode: {ErrorCode.MailDataLoadingFailException}, UserId: {userid}");
+            return new Tuple<ErrorCode, List<MailData>>(ErrorCode.MailDataLoadingFailException, maildata);
         }
     }
 }
-
-
-
-/*
-if (await _queryFactory.Query("UserItem").Where("ItemCode", itemcode).ExistsAsync())
-{
-    await _queryFactory.Query("UserItem").Where("ItemCode", itemcode).IncrementAsync("ItemCount", (int)count);
-}
-else
-{
-    await _queryFactory.Query("UserItem").InsertAsync(new
-    {
-        AccountId = accountid,
-        ItemCode = itemcode,
-        ItemCount = count,
-        UniqueId = ""
-    });
-}
-*/
-
-//query = "SELECT LAST_INSERT_ID();";
-//string query = "SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'GameDb' AND TABLE_NAME = 'UserItem'";
-//var uniqueid = await _queryFactory.StatementAsync(query);

@@ -23,7 +23,7 @@ public class RedisDb : IRedisDb
         var Redisconfig = new RedisConfig("basic", RedisAddress);
         _redisConn = new RedisConnection(Redisconfig);
 
-        var errorCode = Task.Run(() => GetGameDataAsync()).Result;
+        var errorCode = Task.Run(() => GetVersionDataAsync()).Result;
         if (errorCode != ErrorCode.None)
         {
             return;
@@ -32,27 +32,27 @@ public class RedisDb : IRedisDb
         _logger.ZLogInformation("Redis Db Connected");
     }
 
-    public async Task<ErrorCode> GetGameDataAsync()
+    public async Task<ErrorCode> GetVersionDataAsync()
     {
-        var gamedata = new GameData
+        var versiondata = new VersionData
         {
-            AppVersion = _masterDb.GameDataInfo.AppVersion,
-            MasterVersion = _masterDb.GameDataInfo.MasterVersion
+            AppVersion = _masterDb.VersionDataInfo.AppVersion,
+            MasterVersion = _masterDb.VersionDataInfo.MasterVersion
         };
 
         try
         {
-            var redis = new RedisString<GameData>(_redisConn, "gamedata", null);
-            if (await redis.SetAsync(gamedata).ConfigureAwait(false) == false)
+            var redis = new RedisString<VersionData>(_redisConn, "VersionData", null);
+            if (await redis.SetAsync(versiondata).ConfigureAwait(false) == false)
             {
-                _logger.ZLogError($"[GetGameData] ErrorCode: {ErrorCode.GetGameDataFailRedis}");
-                return ErrorCode.GetGameDataFailRedis;
+                _logger.ZLogError($"[GetVersionData] ErrorCode: {ErrorCode.GetVersionDataFailRedis}");
+                return ErrorCode.GetVersionDataFailRedis;
             }
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[GetGameData] ErrorCode: {ErrorCode.GetGameDataFailException}");
-            return ErrorCode.GetGameDataFailException;
+            _logger.ZLogError(ex, $"[GetVersionData] ErrorCode: {ErrorCode.GetVersionDataFailException}");
+            return ErrorCode.GetVersionDataFailException;
         }
 
         return ErrorCode.None;
@@ -63,11 +63,8 @@ public class RedisDb : IRedisDb
         var uid = "UID_" + accountId;
         var user = new AuthUser
         {
-            Email = email,
             AuthToken = authToken,
-            AccountId = accountId,
-            State = UserState.Default.ToString(),
-            LastLogin = DateTime.Now
+            AccountId = accountId
         };
 
         try
@@ -89,19 +86,19 @@ public class RedisDb : IRedisDb
         return ErrorCode.None;
     }
 
-    public async Task<ErrorCode> VerifyGameDataAsync(double appVersion, double masterVersion)
+    public async Task<ErrorCode> VerifyVersionDataAsync(double appVersion, double masterVersion)
     {
         try
         {
-            var redis = new RedisString<GameData>(_redisConn, "gamedata", null);
-            var gamedata = await redis.GetAsync();
-            if (!gamedata.HasValue)
+            var redis = new RedisString<VersionData>(_redisConn, "VersionData", null);
+            var versiondata = await redis.GetAsync();
+            if (!versiondata.HasValue)
             {
-                _logger.ZLogError($"[VerifyGameData] ErrorCode: {ErrorCode.VerifyGameFailNoGameData}");
-                return ErrorCode.VerifyGameFailNoGameData;
+                _logger.ZLogError($"[VerifyVersionData] ErrorCode: {ErrorCode.VerifyVersionDataFailNoData}");
+                return ErrorCode.VerifyVersionDataFailNoData;
             }
 
-            if (gamedata.Value.AppVersion != appVersion || gamedata.Value.MasterVersion != masterVersion)
+            if (versiondata.Value.AppVersion != appVersion || versiondata.Value.MasterVersion != masterVersion)
             {
                 return ErrorCode.LoginFailGameDataNotMatch;
             }
@@ -110,12 +107,12 @@ public class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[VerifyGameData] ErrorCode: {ErrorCode.VerifyGameDataFailException}");
-            return ErrorCode.VerifyGameDataFailException;
+            _logger.ZLogError(ex, $"[VerifyVersionData] ErrorCode: {ErrorCode.VerifyVersionDataFailException}");
+            return ErrorCode.VerifyVersionDataFailException;
         }
     }
 
-    public async Task<AuthUser> GetUserAsync(string accountid)
+    public async Task<AuthUser> GetUserAsync(Int64 accountid)
     {
         var uid = "UID_" + accountid;
 
@@ -144,15 +141,15 @@ public class RedisDb : IRedisDb
             var redis = new RedisString<AuthUser>(_redisConn, userLockKey, NxKeyTimeSpan());
             if (await redis.SetAsync(new AuthUser { }, NxKeyTimeSpan(), StackExchange.Redis.When.NotExists) == false)
             {
-                return false;
+                return true;
             }
+
+            return false;
         }
         catch
         {
-            return false;
+            return true;
         }
-
-        return true;
     }
 
     public async Task<bool> DelUserReqLockAsync(string userLockKey)
@@ -207,8 +204,6 @@ public class RedisDb : IRedisDb
             return new Tuple<ErrorCode, byte[]>(ErrorCode.NotificationLoadingFailException, null);
         }
     }
-
-
 
     public TimeSpan LoginTimeSpan()
     {

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.Services;
+using WebAPIServer.RequestResponse;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
 using ZLogger;
@@ -24,9 +25,9 @@ public class CreateAccount: ControllerBase
     }
 
     [HttpPost]
-    public async Task<PkCreateAccountResponse> Post(PkCreateAccountRequest request)
+    public async Task<CreateAccountResponse> Post(CreateAccountRequest request)
     {
-        var response = new PkCreateAccountResponse();
+        var response = new CreateAccountResponse();
         response.Result = ErrorCode.None;
 
         // 계정 정보 추가
@@ -40,7 +41,7 @@ public class CreateAccount: ControllerBase
 
         // 기본 데이터 생성작업
         // UserData 테이블 / UserItem 테이블에 유저 추가
-        errorCode = await _gameDb.CreateBasicData(accountid);
+        errorCode = await _gameDb.CreateBasicDataAsync(accountid);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
@@ -51,24 +52,4 @@ public class CreateAccount: ControllerBase
 
         return response;
     }
-}
-
-public class PkCreateAccountRequest
-{
-    [Required]
-    [MinLength(1, ErrorMessage = "EMAIL CANNOT BE EMPTY")]
-    [StringLength(50, ErrorMessage = "EMAIL IS TOO LONG")]
-    [RegularExpression("^[a-zA-Z0-9_\\.-]+@([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$", ErrorMessage = "E-mail is not valid")]
-    public String Email { get; set; }
-
-    [Required]
-    [MinLength(1, ErrorMessage = "PAS   SWORD CANNOT BE EMPTY")]
-    [StringLength(30, ErrorMessage = "PASSWORD IS TOO LONG")]
-    [DataType(DataType.Password)]
-    public String Password { get; set; }
-}
-
-public class PkCreateAccountResponse
-{
-    public ErrorCode Result { get; set; }
 }

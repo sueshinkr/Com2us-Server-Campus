@@ -1,6 +1,6 @@
 ﻿namespace WebAPIServer.ModelDB;
 
-public class GameData
+public class VersionData
 {
     public double AppVersion { get; set; }
     public double MasterVersion { get; set; }

@@ -1,4 +1,5 @@
 ﻿using WebAPIServer.Services;
+using WebAPIServer.RequestResponse;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Extensions;
 using System.ComponentModel.DataAnnotations;
@@ -26,9 +27,9 @@ public class Login : ControllerBase
     }
 
     [HttpPost]
-    public async Task<PkLoginResponse> Post(PkLoginRequest request)
+    public async Task<LoginResponse> Post(LoginRequest request)
     {
-        var response = new PkLoginResponse();
+        var response = new LoginResponse();
         response.Result = ErrorCode.None;
 
         // 로그인 정보 검증
@@ -40,7 +41,7 @@ public class Login : ControllerBase
         }
 
         // 게임 데이터 검증
-        errorCode = await _redisDb.VerifyGameDataAsync(request.AppVersion, request.MasterVersion);
+        errorCode = await _redisDb.VerifyVersionDataAsync(request.AppVersion, request.MasterVersion);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
@@ -66,8 +67,10 @@ public class Login : ControllerBase
             return response;
         }
 
+        var userid = response.userData.UserId;
+
         // 아이템 로딩
-        (errorCode, response.userItem) = await _gameDb.UserItemLoading(accountId);
+        (errorCode, response.userItem) = await _gameDb.UserItemLoading(userid);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
@@ -81,38 +84,8 @@ public class Login : ControllerBase
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
-            return response;
-            // 리턴하는게 맞나?
         }
 
         return response;
     }
-}
-
-public class PkLoginRequest
-{
-    [Required]
-    [MinLength(1, ErrorMessage = "EMAIL CANNOT BE EMPTY")]
-    [StringLength(50, ErrorMessage = "EMAIL IS TOO LONG")]
-    [RegularExpression("^[a-zA-Z0-9_\\.-]+@([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$", ErrorMessage = "E-mail is not valid")]
-    public String Email { get; set; }
-
-    [Required]
-    [MinLength(1, ErrorMessage = "PASSWORD CANNOT BE EMPTY")]
-    [StringLength(30, ErrorMessage = "PASSWORD IS TOO LONG")]
-    [DataType(DataType.Password)]
-    public String Password { get; set; }
-
-    public double AppVersion { get; set; }
-
-    public double MasterVersion { get; set; }
-}
-
-public class PkLoginResponse
-{
-    public ErrorCode Result { get; set; }
-    public string Authtoken { get; set; }
-    public UserData userData { get; set; }
-    public UserItem userItem { get; set; }
-    public byte[] notification { get; set; }
 }

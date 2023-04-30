@@ -11,19 +11,9 @@ public class Account
 
 public class AuthUser
 {
-    public string Email { get; set; } = "";
-    public string AuthToken { get; set; } = "";
     public Int64 AccountId { get; set; } = 0;
-    public string State { get; set; } = ""; // enum UserState
+    public string AuthToken { get; set; } = "";
     public DateTime LastLogin { get; set; }
-}
-
-public enum UserState
-{
-    Default = 0,
-    Login = 1,
-    Matching = 2,
-    Playing = 3
 }
 
 public class RediskeyExpireTime

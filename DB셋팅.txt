@@ -11,14 +11,14 @@ CREATE DATABASE IF NOT EXISTS MasterDb;
 
 USE MasterDb;
 
-DROP TABLE IF EXISTS MasterDb.`GameData`;
-CREATE TABLE IF NOT EXISTS MasterDb.`Gamedata`
+DROP TABLE IF EXISTS MasterDb.`VersionData`;
+CREATE TABLE IF NOT EXISTS MasterDb.`VersionData`
 (
     AppVersion DECIMAL(5, 4) NOT NULL COMMENT '앱 버전',
     MasterVersion DECIMAL(5, 4) NOT NULL COMMENT '마스터 버전'
-) COMMENT '게임 데이터';
+) COMMENT '게임 버전 데이 ';
 
-INSERT INTO GameData
+INSERT INTO VersionData
 VALUES (1.0001, 1.0001);
 
 
@@ -158,38 +158,83 @@ DROP TABLE IF EXISTS GameDb.`UserData`;
 CREATE TABLE IF NOT EXISTS GameDb.`UserData`
 (
     AccountId BIGINT NOT NULL PRIMARY KEY COMMENT '계정번호',
+    UserId BIGINT NOT NULL AUTO_INCREMENT UNIQUE KEY COMMENT '유저번호',
     Level SMALLINT NOT NULL COMMENT '레벨',
     Exp BIGINT NOT NULL COMMENT '경험치',
     Money BIGINT NOT NULL COMMENT '보유 재화',
     AttendanceCount TINYINT NOT NULL COMMENT '출석 횟수',
     ClearStage INT NOT NULL COMMENT '완료한 스테이지'
-) COMMENT '유저 정보';
+) COMMENT '유저 기본 정보';
 
 
 
-DROP TABLE IF EXISTS GameDb.`UserItem_Consumable`;
-CREATE TABLE IF NOT EXISTS GameDb.`UserItem_Consumable`
+DROP TABLE IF EXISTS GameDb.`UserItem`;
+CREATE TABLE IF NOT EXISTS GameDb.`UserItem`
 (
-    AccountId BIGINT NOT NULL COMMENT '계정번호',
+    ItemId BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '아이템 고유 ID',
+    UserId BIGINT NOT NULL COMMENT '계정번호',
     ItemCode BIGINT NOT NULL COMMENT '아이템 번호',
     ItemCount INT NOT NULL COMMENT '아이템 개수',
-    PRIMARY KEY (AccountId, ItemCode)
-) COMMENT '유저 아이템 - 소모품 정보';
+    EnhanceCount TINYINT NOT NULL DEFAULT 0 COMMENT '강화 수치',
+    ObtainedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '획득 일시'
+) COMMENT '유저 아이템 정보';
 
 
 
-DROP TABLE IF EXISTS GameDb.`UserItem_Equipment`;
-CREATE TABLE IF NOT EXISTS GameDb.`UserItem_Equipment`
+DROP TABLE IF EXISTS GameDb.`MailData`;
+CREATE TABLE IF NOT EXISTS GameDb.`MailData`
 (
-    UniqueId BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '장비 고유 ID',
-    AccountId BIGINT NOT NULL COMMENT '계정번호',
-    ItemCode BIGINT NOT NULL COMMENT '아이템 번호',
-    ObtainDate DATETIME NOT NULL COMMENT '획득 일시',
-    EnhanceCount TINYINT NOT NULL COMMENT '강화 수치'
-) COMMENT '유저 아이템 - 장비 정보';
+    MailId BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '우편 고유 ID',
+    UserId BIGINT NOT NULl,
+    SenderName VARCHAR(50) NOT NULL,
+    Title VARCHAR(100) NOT NULL,
+    Content VARCHAR(2000) NOT NULL,
+    ItemCode BIGINT,
+    ItemCount INT,
+    IsRead BOOLEAN NOT NULL,
+    IsReceive BOOLEAN NOT NULL,
+    ObtainedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ExpiredAt DATETIME NOT NULL
+) COMMENT '우편 정보';
 
 
 
+INSERT INTO MailData (UserId, SenderName, Title, Content, ItemCode, ItemCount, IsRead, IsReceive, ExpiredAt)
+VALUES (1, 'GM', '메일1', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일2', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일3', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일4', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일5', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일6', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일7', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일8', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일9', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일10', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일11', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일12', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일13', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일14', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일15', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일16', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일17', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일18', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일19', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일20', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일21', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일22', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일23', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일24', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일25', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일26', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일27', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일28', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일29', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일30', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY));
+
+
+
+
+USE GameDb;
 select * from userdata;
-select * from useritem_consumable;
-select * from useritem_equipment;
+select * from useritem;
+

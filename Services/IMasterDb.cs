@@ -5,7 +5,7 @@ namespace WebAPIServer.Services;
 
 public interface IMasterDb
 {
-    GameData GameDataInfo { get; }
+    VersionData VersionDataInfo { get; }
     List<Item> ItemInfo { get; }
     List<ItemAttribute> ItemAttributeInfo { get; }
     List<AttendanceReward> AttendanceRewardInfo { get; }
