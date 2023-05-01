@@ -214,58 +214,15 @@ CREATE TABLE IF NOT EXISTS GameDb.`Mail_Item`
 
 
 INSERT INTO Mail_Data (MailId, UserId, SenderName, Title, IsRead, hasItem, ExpiredAt)
-VALUES (1102525403530006521, 1, 'GM', '메일1', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일2', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일3', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일4', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일5', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일6', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일7', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일8', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일9', false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일10', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일11', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일12', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일13', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일14', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일15', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일16', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일17', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일18', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일19', false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일20', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일21', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일22', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일23', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일24', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일25', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일26', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일27', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일28', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일29', false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY));
+VALUES (1102525403530006521, 1, 'GM', '메일1', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY));
 
 INSERT INTO Mail_Content
-VALUE (1102525403530006521, '------------------내용1---------------------'),
-('60efbf22-e7d3-11ed-922d-efa7765b63de', '------------------내용2---------------------'),
-('60efbffe-e7d3-11ed-922d-efa7765b63de', '------------------내용3---------------------'),
-('60efc06c-e7d3-11ed-922d-efa7765b63de', '------------------내용4---------------------'),
-('60efc0d0-e7d3-11ed-922d-efa7765b63de', '------------------내용5---------------------'),
-('60efc12a-e7d3-11ed-922d-efa7765b63de', '------------------내용6---------------------'),
-('60efc1c0-e7d3-11ed-922d-efa7765b63de', '------------------내용7---------------------'),
-('60efc21a-e7d3-11ed-922d-efa7765b63de', '------------------내용8---------------------'),
-('60efc26a-e7d3-11ed-922d-efa7765b63de', '------------------내용9---------------------');
+VALUE (1102525403530006521, '------------------내용1---------------------');
 
 INSERT INTO Mail_Item (MailId, ItemId, ItemCode, ItemCount)
 VALUE (1102525403530006521, 1102525403530106521, 1, 1000),
-('60efbc84-e7d3-11ed-922d-efa7765b63de', 2, 1),
-('60efbc84-e7d3-11ed-922d-efa7765b63de', 3, 1), // 메일 1에 아이템 여러개
-('60efbf22-e7d3-11ed-922d-efa7765b63de', 2, 1),
-('60efbffe-e7d3-11ed-922d-efa7765b63de', 3, 1),
-('60efc06c-e7d3-11ed-922d-efa7765b63de', 4, 1),
-('60efc0d0-e7d3-11ed-922d-efa7765b63de', 5, 1),
-('60efc12a-e7d3-11ed-922d-efa7765b63de', 6, 150),
-('60efc1c0-e7d3-11ed-922d-efa7765b63de', 2, 1),
-('60efc21a-e7d3-11ed-922d-efa7765b63de', 6, 199);
+(1102525403530006521, 1202525403530106521, 2, 1),
+(1102525403530006521, 1302525403530106521, 3, 1); // 메일 1에 아이템 여러개
 
 
 
