@@ -6,13 +6,12 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using WebAPIServer.ModelDB;
+using WebAPIServer.DataClass;
 using WebAPIServer.Services;
 using ZLogger;
 
 namespace WebAPIServer.Middleware;
 
-// You may need to install the Microsoft.AspNetCore.Http.Abstractions package into your project
 public class CheckUserAuth
 {
     private readonly RequestDelegate _next;

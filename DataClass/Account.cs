@@ -1,4 +1,4 @@
-﻿namespace WebAPIServer.ModelDB;
+﻿namespace WebAPIServer.DataClass;
 
 
 public class Account

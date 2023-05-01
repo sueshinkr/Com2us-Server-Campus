@@ -32,19 +32,21 @@ public class CreateAccount: ControllerBase
 
         // 계정 정보 추가
         // Account 테이블에 유저 추가 
-        var (errorCode, accountid) = await _accountDb.CreateAccountAsync(request.Email, request.Password);
+        (var errorCode, response.AccountId) = await _accountDb.CreateAccountAsync(request.Email, request.Password);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
+            response.AccountId = 0;
             return response;
         }
 
         // 기본 데이터 생성작업
         // UserData 테이블 / UserItem 테이블에 유저 추가
-        errorCode = await _gameDb.CreateBasicDataAsync(accountid);
+        errorCode = await _gameDb.CreateBasicDataAsync(response.AccountId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
+            response.AccountId = 0;
             return response;
         }
 

@@ -1,5 +1,5 @@
 ﻿using System;
-using WebAPIServer.ModelDB;
+using WebAPIServer.DataClass;
 
 namespace WebAPIServer.Services;
 

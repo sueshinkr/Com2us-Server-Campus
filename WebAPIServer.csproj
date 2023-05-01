@@ -17,6 +17,8 @@
     <PackageReference Include="ZLogger" Version="1.7.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.5" />
+    <PackageReference Include="IdGen.DependencyInjection" Version="3.0.0" />
+    <PackageReference Include="IdGen" Version="3.0.3" />
   </ItemGroup>
 
   <ItemGroup>

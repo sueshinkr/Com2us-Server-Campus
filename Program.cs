@@ -1,14 +1,16 @@
 using WebAPIServer.Services;
 using WebAPIServer.Middleware;
 using ZLogger;
+using IdGen.DependencyInjection; //https://github.com/RobThree/IdGen
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddTransient<IAccountDb, AccountDb>();
 builder.Services.AddTransient<IGameDb, GameDb>();
 builder.Services.AddSingleton<IRedisDb, RedisDb>();
-
 builder.Services.AddSingleton<IMasterDb, MasterDb>();
+builder.Services.AddIdGen(1);
+
 builder.Services.AddControllers();
 
 builder.Logging.ClearProviders();

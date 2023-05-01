@@ -6,7 +6,8 @@
 
     CreateAccountFailDuplicate = 1001,
     CreateAccountFailException = 1002,
-    CreateBasicDataFailException = 1003,
+    CreateBasicDataFailInsertItem = 1003,
+    CreateBasicDataFailException = 1004,
 
     LoginFailUserNotExist = 2001,
     LoginFailPwNotMatch = 2002,
@@ -33,7 +34,10 @@
     AuthTokenFailSetNx = 4006,
     SetJsonFailException = 4007,
 
-    //MailDataLoadingbyRedisFailException = 5001,
-    MailDataLoadingFailNoData = 5002,
-    MailDataLoadingFailException = 5003,
+    MailDataLoadingFailNoData = 5001,
+    MailDataLoadingFailException = 5002,
+    MailReadingFailException = 5003,
+    MailItemReceivingFailAlreadyGet = 5004,
+    MailItemReceivingFailInsertItem = 5005,
+    MailItemReceivingFailException = 5006
 }

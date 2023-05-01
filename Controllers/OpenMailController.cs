@@ -6,31 +6,25 @@ using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
 using WebAPIServer.Services;
 
-// For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class Mail : ControllerBase
+public class OpenMail : ControllerBase
 {
     readonly ILogger<Login> _logger;
-    readonly IAccountDb _accountDb;
-    readonly IRedisDb _redisDb;
     readonly IGameDb _gameDb;
 
-    public Mail(ILogger<Login> logger, IAccountDb accountDb, IRedisDb redisDb, IGameDb gameDb)
+    public OpenMail(ILogger<Login> logger, IGameDb gameDb)
     {
         _logger = logger;
-        _accountDb = accountDb;
-        _redisDb = redisDb;
         _gameDb = gameDb;
     }
 
     [HttpPost]
-    public async Task<MailResponse> Post(MailRequest request)
+    public async Task<OpenMailResponse> Post(OpenMailRequest request)
     {
-        var response = new MailResponse();
+        var response = new OpenMailResponse();
         response.Result = ErrorCode.None;
 
         (var errorCode, response.mailData) = await _gameDb.MailDataLoadingAsync(request.UserId, request.PageNumber);

@@ -20,4 +20,5 @@ public class CreateAccountRequest
 public class CreateAccountResponse
 {
     public ErrorCode Result { get; set; }
+    public Int64 AccountId { get; set; }
 }

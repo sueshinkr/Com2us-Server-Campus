@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using WebAPIServer.ModelDB;
+using WebAPIServer.DataClass;
 
 namespace WebAPIServer.RequestResponse;
 

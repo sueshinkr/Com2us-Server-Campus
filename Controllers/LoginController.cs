@@ -5,7 +5,7 @@ using Microsoft.OpenApi.Extensions;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using ZLogger;
-using WebAPIServer.ModelDB;
+using WebAPIServer.DataClass;
 
 namespace WebAPIServer.Controllers;
 
@@ -40,7 +40,7 @@ public class Login : ControllerBase
             return response;
         }
 
-        // 게임 데이터 검증
+        // 버전 데이터 검증
         errorCode = await _redisDb.VerifyVersionDataAsync(request.AppVersion, request.MasterVersion);
         if (errorCode != ErrorCode.None)
         {

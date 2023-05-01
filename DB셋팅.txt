@@ -134,7 +134,7 @@ USE AccountDb;
 DROP TABLE IF EXISTS AccountDb.`Account`;
 CREATE TABLE IF NOT EXISTS AccountDb.`Account`
 (
-    AccountId BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '계정번호',
+    AccountId BIGINT NOT NULL PRIMARY KEY COMMENT '계정번호',
     Email VARCHAR(50) NOT NULL UNIQUE COMMENT '이메일',
     SaltValue VARCHAR(100) NOT NULL COMMENT  '암호화 값',
     HashedPassword VARCHAR(100) NOT NULL COMMENT '해싱된 비밀번호',
@@ -154,8 +154,8 @@ CREATE DATABASE IF NOT EXISTS GameDb;
 
 USE GameDb;
 
-DROP TABLE IF EXISTS GameDb.`UserData`;
-CREATE TABLE IF NOT EXISTS GameDb.`UserData`
+DROP TABLE IF EXISTS GameDb.`User_Data`;
+CREATE TABLE IF NOT EXISTS GameDb.`User_Data`
 (
     AccountId BIGINT NOT NULL PRIMARY KEY COMMENT '계정번호',
     UserId BIGINT NOT NULL AUTO_INCREMENT UNIQUE KEY COMMENT '유저번호',
@@ -168,10 +168,10 @@ CREATE TABLE IF NOT EXISTS GameDb.`UserData`
 
 
 
-DROP TABLE IF EXISTS GameDb.`UserItem`;
-CREATE TABLE IF NOT EXISTS GameDb.`UserItem`
+DROP TABLE IF EXISTS GameDb.`User_Item`;
+CREATE TABLE IF NOT EXISTS GameDb.`User_Item`
 (
-    ItemId BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '아이템 고유 ID',
+    ItemId BIGINT NOT NULL PRIMARY KEY COMMENT '아이템 고유 ID',
     UserId BIGINT NOT NULL COMMENT '계정번호',
     ItemCode BIGINT NOT NULL COMMENT '아이템 번호',
     ItemCount INT NOT NULL COMMENT '아이템 개수',
@@ -181,55 +181,92 @@ CREATE TABLE IF NOT EXISTS GameDb.`UserItem`
 
 
 
-DROP TABLE IF EXISTS GameDb.`MailData`;
-CREATE TABLE IF NOT EXISTS GameDb.`MailData`
+DROP TABLE IF EXISTS GameDb.`Mail_Data`;
+CREATE TABLE IF NOT EXISTS GameDb.`Mail_Data`
 (
-    MailId BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '우편 고유 ID',
-    UserId BIGINT NOT NULl,
-    SenderName VARCHAR(50) NOT NULL,
-    Title VARCHAR(100) NOT NULL,
-    Content VARCHAR(2000) NOT NULL,
-    ItemCode BIGINT,
-    ItemCount INT,
-    IsRead BOOLEAN NOT NULL,
-    IsReceive BOOLEAN NOT NULL,
-    ObtainedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ExpiredAt DATETIME NOT NULL
+    MailId BIGINT NOT NULL PRIMARY KEY COMMENT '우편 고유 ID',
+    UserId BIGINT NOT NULl COMMENT '계정번호',
+    SenderName VARCHAR(50) NOT NULL COMMENT '발송인',
+    Title VARCHAR(100) NOT NULL COMMENT '제목',
+    IsRead BOOLEAN NOT NULL COMMENT '읽음 여부',
+    hasItem BOOLEAN NOT NULL COMMENT '아이템 포함 여부',
+    ObtainedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '메일 수신 일시',
+    ExpiredAt DATETIME NOT NULL COMMENT '메일 만료 일시'
 ) COMMENT '우편 정보';
 
+DROP TABLE IF EXISTS GameDb.`Mail_Content`;
+CREATE TABLE IF NOT EXISTS GameDb.`Mail_Content`
+(
+    MailId BIGINT NOT NULL PRIMARY KEY COMMENT '우편 고유 ID',
+    Content VARCHAR(2000) NOT NULL COMMENT '내용'
+) COMMENT '우편 내용 정보';
+
+DROP TABLE IF EXISTS GameDb.`Mail_Item`;
+CREATE TABLE IF NOT EXISTS GameDb.`Mail_Item`
+(
+    ItemId BIGINT NOT NULL PRIMARY KEY COMMENT '아이템 고유 ID',
+    MailId BIGINT NOT NULL COMMENT '우편 고유 ID',
+    ItemCode BIGINT COMMENT '아이템 코드',
+    ItemCount INT COMMENT '아이템 개수',
+    IsReceive BOOLEAN NOT NULL DEFAULT FALSE COMMENT '아이템 수령 여부'
+) COMMENT '우편 아이템 정보';
 
 
-INSERT INTO MailData (UserId, SenderName, Title, Content, ItemCode, ItemCount, IsRead, IsReceive, ExpiredAt)
-VALUES (1, 'GM', '메일1', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일2', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일3', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일4', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일5', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일6', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일7', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일8', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일9', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일10', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일11', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일12', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일13', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일14', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일15', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일16', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일17', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일18', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일19', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일20', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일21', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일22', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일23', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일24', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일25', '----------내용---------', 1, 1000, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일26', '----------내용---------', 2, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일27', '----------내용---------', 3, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일28', '----------내용---------', 4, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일29', '----------내용---------', 5, 1, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
-(1, 'GM', '메일30', '----------내용---------', 6, 50, false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY));
+
+INSERT INTO Mail_Data (MailId, UserId, SenderName, Title, IsRead, hasItem, ExpiredAt)
+VALUES (1102525403530006521, 1, 'GM', '메일1', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일2', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일3', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일4', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일5', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일6', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일7', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일8', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일9', false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일10', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일11', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일12', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일13', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일14', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일15', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일16', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일17', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일18', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일19', false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일20', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일21', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일22', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일23', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일24', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일25', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일26', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일27', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일28', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY)),
+(1, 'GM', '메일29', false, false, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY));
+
+INSERT INTO Mail_Content
+VALUE (1102525403530006521, '------------------내용1---------------------'),
+('60efbf22-e7d3-11ed-922d-efa7765b63de', '------------------내용2---------------------'),
+('60efbffe-e7d3-11ed-922d-efa7765b63de', '------------------내용3---------------------'),
+('60efc06c-e7d3-11ed-922d-efa7765b63de', '------------------내용4---------------------'),
+('60efc0d0-e7d3-11ed-922d-efa7765b63de', '------------------내용5---------------------'),
+('60efc12a-e7d3-11ed-922d-efa7765b63de', '------------------내용6---------------------'),
+('60efc1c0-e7d3-11ed-922d-efa7765b63de', '------------------내용7---------------------'),
+('60efc21a-e7d3-11ed-922d-efa7765b63de', '------------------내용8---------------------'),
+('60efc26a-e7d3-11ed-922d-efa7765b63de', '------------------내용9---------------------');
+
+INSERT INTO Mail_Item (MailId, ItemId, ItemCode, ItemCount)
+VALUE (1102525403530006521, 1102525403530106521, 1, 1000),
+('60efbc84-e7d3-11ed-922d-efa7765b63de', 2, 1),
+('60efbc84-e7d3-11ed-922d-efa7765b63de', 3, 1), // 메일 1에 아이템 여러개
+('60efbf22-e7d3-11ed-922d-efa7765b63de', 2, 1),
+('60efbffe-e7d3-11ed-922d-efa7765b63de', 3, 1),
+('60efc06c-e7d3-11ed-922d-efa7765b63de', 4, 1),
+('60efc0d0-e7d3-11ed-922d-efa7765b63de', 5, 1),
+('60efc12a-e7d3-11ed-922d-efa7765b63de', 6, 150),
+('60efc1c0-e7d3-11ed-922d-efa7765b63de', 2, 1),
+('60efc21a-e7d3-11ed-922d-efa7765b63de', 6, 199);
+
 
 
 
