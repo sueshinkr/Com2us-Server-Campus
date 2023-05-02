@@ -38,6 +38,7 @@ public class GameDb : IGameDb
         GC.SuppressFinalize(this);
     }
 
+    // 기본 데이터 생성
     public async Task<ErrorCode> CreateBasicDataAsync(Int64 accountid)
     {
         try
@@ -72,6 +73,7 @@ public class GameDb : IGameDb
         }
     }
 
+    // 유저 데이터에 아이템 추가
     public async Task<ErrorCode> InsertItem(Int64 userid, Int64 itemcode, Int64 count)
     {
         try
@@ -146,6 +148,7 @@ public class GameDb : IGameDb
         }
     }
 
+    // 유저 기본 데이터 로딩
     public async Task<Tuple<ErrorCode, UserData>> UserDataLoading(Int64 accountid)
     {
         try
@@ -160,6 +163,7 @@ public class GameDb : IGameDb
         }
     }
 
+    // 유저 아이템 로딩
     public async Task<Tuple<ErrorCode, List<UserItem>>> UserItemLoading(Int64 userid)
     {
         var useritem = new List<UserItem>();
@@ -177,6 +181,7 @@ public class GameDb : IGameDb
         }
     }
 
+    // 메일 기본 데이터 로딩
     public async Task<Tuple<ErrorCode, List<MailData>>> MailDataLoadingAsync(Int64 userid, Int64 pagenumber)
     {
         var maildata = new List<MailData>();
@@ -199,6 +204,7 @@ public class GameDb : IGameDb
         }
     }
 
+    // 메일 본문 및 포함 아이템 읽기
     public async Task<Tuple<ErrorCode, string, List<MailItem>>> MailReadingAsync(Int64 mailid)
     {
         var content = new string("");
@@ -223,26 +229,24 @@ public class GameDb : IGameDb
         }
     }
 
-    public async Task<Tuple<ErrorCode, MailItem>> MailItemReceivingAsync(Int64 itemid, Int64 userid)
+    // 메일 아이템 수령
+    public async Task<ErrorCode> MailItemReceivingAsync(Int64 itemid, Int64 userid)
     {
-        // MailItem을 다시 보내줘야할까? 메일 읽을 때 이미 데이터 보냈는데...
-        var mailitem = new MailItem();
-
         try
         {
-            mailitem = await _queryFactory.Query("Mail_Item").Where("ItemId", itemid).FirstOrDefaultAsync<MailItem>();
+            var mailitem = await _queryFactory.Query("Mail_Item").Where("ItemId", itemid).FirstOrDefaultAsync<MailItem>();
 
             if (mailitem.IsReveived == true)
             {
                 _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailAlreadyGet}, ItemId: {itemid}");
-                return new Tuple<ErrorCode, MailItem>(ErrorCode.MailItemReceivingFailAlreadyGet, null);
+                return ErrorCode.MailItemReceivingFailAlreadyGet;
             }
 
             var errorCode = await InsertItem(userid, mailitem.ItemCode, mailitem.ItemCount);
             if (errorCode != ErrorCode.None)
             {
                 _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailInsertItem}, ItemId: {itemid}");
-                return new Tuple<ErrorCode, MailItem>(errorCode, null);
+                return errorCode;
             }
             else
             {
@@ -252,13 +256,12 @@ public class GameDb : IGameDb
                 });
             }
 
-            return new Tuple<ErrorCode, MailItem>(ErrorCode.None, mailitem);
+            return ErrorCode.None;
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex, $"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailException}, ItemId: {itemid}");
-            return new Tuple<ErrorCode, MailItem>(ErrorCode.MailItemReceivingFailException, null);
+            return ErrorCode.MailItemReceivingFailException;
         }
     }
-
 }
