@@ -26,7 +26,7 @@ public class MailItem
     public Int64 ItemId { get; set; }
     public Int64 ItemCode { get; set; }
     public Int64 ItemCount { get; set; }
-    public bool IsReceive { get; set; }
+    public bool IsReveived { get; set; }
 }
 
 public class MailContent

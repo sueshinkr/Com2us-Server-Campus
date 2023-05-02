@@ -163,7 +163,8 @@ CREATE TABLE IF NOT EXISTS GameDb.`User_Data`
     Exp BIGINT NOT NULL COMMENT '경험치',
     Money BIGINT NOT NULL COMMENT '보유 재화',
     AttendanceCount TINYINT NOT NULL COMMENT '출석 횟수',
-    ClearStage INT NOT NULL COMMENT '완료한 스테이지'
+    ClearStage INT NOT NULL COMMENT '완료한 스테이지',
+    LastLogin DATETIME NOT NULL COMMENT '마지막 로그인 일시'
 ) COMMENT '유저 기본 정보';
 
 
@@ -208,7 +209,7 @@ CREATE TABLE IF NOT EXISTS GameDb.`Mail_Item`
     MailId BIGINT NOT NULL COMMENT '우편 고유 ID',
     ItemCode BIGINT COMMENT '아이템 코드',
     ItemCount INT COMMENT '아이템 개수',
-    IsReceive BOOLEAN NOT NULL DEFAULT FALSE COMMENT '아이템 수령 여부'
+    IsReveived BOOLEAN NOT NULL DEFAULT FALSE COMMENT '아이템 수령 여부'
 ) COMMENT '우편 아이템 정보';
 
 

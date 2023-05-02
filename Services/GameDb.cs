@@ -225,13 +225,14 @@ public class GameDb : IGameDb
 
     public async Task<Tuple<ErrorCode, MailItem>> MailItemReceivingAsync(Int64 itemid, Int64 userid)
     {
+        // MailItem을 다시 보내줘야할까? 메일 읽을 때 이미 데이터 보냈는데...
         var mailitem = new MailItem();
 
         try
         {
             mailitem = await _queryFactory.Query("Mail_Item").Where("ItemId", itemid).FirstOrDefaultAsync<MailItem>();
 
-            if (mailitem.IsReceive == true)
+            if (mailitem.IsReveived == true)
             {
                 _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailAlreadyGet}, ItemId: {itemid}");
                 return new Tuple<ErrorCode, MailItem>(ErrorCode.MailItemReceivingFailAlreadyGet, null);
@@ -247,7 +248,7 @@ public class GameDb : IGameDb
             {
                 await _queryFactory.Query("Mail_Item").Where("ItemId", itemid).UpdateAsync(new
                 {
-                    IsReceive = true
+                    IsReveived = true
                 });
             }
 
