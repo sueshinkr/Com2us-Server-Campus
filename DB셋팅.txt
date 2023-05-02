@@ -187,20 +187,14 @@ CREATE TABLE IF NOT EXISTS GameDb.`Mail_Data`
 (
     MailId BIGINT NOT NULL PRIMARY KEY COMMENT '우편 고유 ID',
     UserId BIGINT NOT NULl COMMENT '계정번호',
-    SenderName VARCHAR(50) NOT NULL COMMENT '발송인',
+    SenderId BIGINT NOT NULL COMMENT '발신자 ID',
     Title VARCHAR(100) NOT NULL COMMENT '제목',
+    Content VARCHAR(2000) NOT NULL COMMENT '내용',
     IsRead BOOLEAN NOT NULL COMMENT '읽음 여부',
     hasItem BOOLEAN NOT NULL COMMENT '아이템 포함 여부',
     ObtainedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '메일 수신 일시',
     ExpiredAt DATETIME NOT NULL COMMENT '메일 만료 일시'
 ) COMMENT '우편 정보';
-
-DROP TABLE IF EXISTS GameDb.`Mail_Content`;
-CREATE TABLE IF NOT EXISTS GameDb.`Mail_Content`
-(
-    MailId BIGINT NOT NULL PRIMARY KEY COMMENT '우편 고유 ID',
-    Content VARCHAR(2000) NOT NULL COMMENT '내용'
-) COMMENT '우편 내용 정보';
 
 DROP TABLE IF EXISTS GameDb.`Mail_Item`;
 CREATE TABLE IF NOT EXISTS GameDb.`Mail_Item`
@@ -214,8 +208,8 @@ CREATE TABLE IF NOT EXISTS GameDb.`Mail_Item`
 
 
 
-INSERT INTO Mail_Data (MailId, UserId, SenderName, Title, IsRead, hasItem, ExpiredAt)
-VALUES (1102525403530006521, 1, 'GM', '메일1', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY));
+INSERT INTO Mail_Data (MailId, UserId, SenderId, Title, Content, IsRead, hasItem, ExpiredAt)
+VALUES (1102525403530006521, 1, 0, '메일1', '------------------내용1---------------------', false, true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY));
 
 INSERT INTO Mail_Content
 VALUE (1102525403530006521, '------------------내용1---------------------');

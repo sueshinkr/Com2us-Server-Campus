@@ -29,17 +29,12 @@ public class MailItem
     public bool IsReveived { get; set; }
 }
 
-public class MailContent
-{
-    public string Content { get; set; }
-}
-
 public class MailData
 {
     public Int64 MailId { get; set; }
     public Int64 UserId { get; set; }
+    public Int64 SenderId { get; set; }
 
-    public string SenderName { get; set; }
     public string Title { get; set; }
 
     public bool IsRead { get; set; }

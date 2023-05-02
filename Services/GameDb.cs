@@ -206,7 +206,7 @@ public class GameDb : IGameDb
 
         try
         {
-            content = await _queryFactory.Query("Mail_Content").Where("MailId", mailid).Select("Content").FirstAsync<string>();
+            content = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("Content").FirstAsync<string>();
             mailitem = await _queryFactory.Query("Mail_Item").Where("MailId", mailid).GetAsync<MailItem>() as List<MailItem>;
 
             if (mailitem.Count == 0)
