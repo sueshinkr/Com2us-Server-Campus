@@ -186,14 +186,23 @@ public class GameDb : IGameDb
     }
 
     // 메일 기본 데이터 로딩
-    // Mail_Data 테이블에서 메일 기본 정보 가져오기
+    // Mail_Data 테이블에서 메일 기본 정보 가져오기ㅊ
     public async Task<Tuple<ErrorCode, List<MailData>>> MailDataLoadingAsync(Int64 userid, Int64 pagenumber)
     {
         var maildata = new List<MailData>();
 
+        if (pagenumber < 1)
+        {
+            _logger.ZLogError($"[MailDataLoading] ErrorCode: {ErrorCode.MailDataLoadingFailWrongPage}, UserId: {userid}, PageNumber: {pagenumber}");
+            return new Tuple<ErrorCode, List<MailData>>(ErrorCode.MailDataLoadingFailWrongPage, maildata);
+        }
+
         try
         {
-            maildata = await _queryFactory.Query("Mail_Data").Where("UserId", userid).Offset((pagenumber - 1) * 20).Limit(20).GetAsync<MailData>() as List<MailData>;
+            maildata = await _queryFactory.Query("Mail_Data").Where("UserId", userid).Where("IsDelete", false)
+                                          .OrderByDesc("ObtainedAt").Offset((pagenumber - 1) * 20).Limit(20)
+                                          .GetAsync<MailData>() as List<MailData>;
+            // 한번에 읽어오는 갯수를 config에서 가져오는게 더 좋을듯
             if (maildata.Count == 0)
             {
                 _logger.ZLogError($"[MailDataLoading] ErrorCode: {ErrorCode.MailDataLoadingFailNoData}, UserId: {userid}, PageNumber: {pagenumber}");
@@ -274,6 +283,35 @@ public class GameDb : IGameDb
         {
             _logger.ZLogError(ex, $"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailException}, ItemId: {itemid}");
             return ErrorCode.MailItemReceivingFailException;
+        }
+    }
+
+    // 메일 삭제
+    // Mail_Data 테이블에서 논리적으로만 삭제
+    public async Task<ErrorCode> MailDeletingAsync(Int64 mailid)
+    {
+        try
+        {
+            var isdelete = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("IsDelete").FirstAsync<bool>();
+            if (isdelete == true)
+            {
+                _logger.ZLogError($"[MailDeleting] ErrorCode: {ErrorCode.MailDeletingFailAlreadyDelete}, MailId: {mailid}");
+                return ErrorCode.MailDeletingFailAlreadyDelete;
+            }
+            else
+            {
+                await _queryFactory.Query("Mail_Data").Where("MailId", mailid).UpdateAsync(new
+                {
+                    IsDelete = true
+                });
+            }
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, $"[MailDeleting] ErrorCode: {ErrorCode.MailDeletingFailException}, MailId: {mailid}");
+            return ErrorCode.MailDeletingFailException;
         }
     }
 }

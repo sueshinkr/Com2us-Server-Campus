@@ -23,8 +23,10 @@
 
   <ItemGroup>
     <None Remove="Middleware\" />
+    <None Remove="Controllers\MailController\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Middleware\" />
+    <Folder Include="Controllers\MailController\" />
   </ItemGroup>
 </Project>

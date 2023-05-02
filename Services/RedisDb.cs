@@ -56,26 +56,6 @@ public class RedisDb : IRedisDb
         return ErrorCode.None;
     }
 
-    // 게임 버전 검증
-    // MasterData에서 가져온 데이터를 바탕으로 검증
-    public ErrorCode VerifyVersionDataAsync(double appVersion, double masterVersion)
-    {
-        try
-        {
-            if (_masterDb.VersionDataInfo.AppVersion != appVersion || _masterDb.VersionDataInfo.MasterVersion != masterVersion)
-            {
-                return ErrorCode.LoginFailGameDataNotMatch;
-            }
-
-            return ErrorCode.None;
-        }
-        catch (Exception ex)
-        {
-            _logger.ZLogError(ex, $"[VerifyVersionData] ErrorCode: {ErrorCode.VerifyVersionDataFailException}");
-            return ErrorCode.VerifyVersionDataFailException;
-        }
-    }
-
     public async Task<AuthUser> GetUserAsync(Int64 accountid)
     {
         var uid = "UID_" + accountid;

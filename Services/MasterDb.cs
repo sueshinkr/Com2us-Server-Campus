@@ -53,4 +53,24 @@ public class MasterDb : IMasterDb
 
         _dbConn.Close();
     }
+
+    // 게임 버전 검증
+    // MasterData에서 가져온 데이터를 바탕으로 검증
+    public ErrorCode VerifyVersionDataAsync(double appVersion, double masterVersion)
+    {
+        try
+        {
+            if (VersionDataInfo.AppVersion != appVersion || VersionDataInfo.MasterVersion != masterVersion)
+            {
+                return ErrorCode.LoginFailGameDataNotMatch;
+            }
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, $"[VerifyVersionData] ErrorCode: {ErrorCode.VerifyVersionDataFailException}");
+            return ErrorCode.VerifyVersionDataFailException;
+        }
+    }
 }

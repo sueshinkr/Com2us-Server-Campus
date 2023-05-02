@@ -11,5 +11,6 @@ public interface IGameDb : IDisposable
     public Task<Tuple<ErrorCode, List<MailData>>> MailDataLoadingAsync(Int64 userid, Int64 pagenumber);
     public Task<Tuple<ErrorCode, string, List<MailItem>>> MailReadingAsync(Int64 mailid);
     public Task<ErrorCode> MailItemReceivingAsync(Int64 itemid, Int64 userid);
+    public Task<ErrorCode> MailDeletingAsync(Int64 mailid);
 }
 

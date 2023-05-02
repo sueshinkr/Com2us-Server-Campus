@@ -14,18 +14,19 @@ namespace WebAPIServer.Middleware;
 
 public class CheckUserAuth
 {
-    private readonly RequestDelegate _next;
+    readonly RequestDelegate _next;
     readonly ILogger<CheckUserAuth> _logger;
-    private readonly IRedisDb _redisDb;
-    private readonly IGameDb _gameDb;
+    readonly IRedisDb _redisDb;
+    readonly IGameDb _gameDb;
+    readonly IMasterDb _MasterDb;
 
-
-    public CheckUserAuth(RequestDelegate next, ILogger<CheckUserAuth> logger, IRedisDb redisDb, IGameDb gameDb)
+    public CheckUserAuth(RequestDelegate next, ILogger<CheckUserAuth> logger, IRedisDb redisDb, IGameDb gameDb, IMasterDb masterDb)
     {
         _next = next;
         _logger = logger;
         _redisDb = redisDb;
         _gameDb = gameDb;
+        _MasterDb = masterDb;
     }
 
     public async Task Invoke(HttpContext context)
@@ -67,7 +68,7 @@ public class CheckUserAuth
             }
 
             // 게임 데이터 확인
-            if (_redisDb.VerifyVersionDataAsync(appVersion, masterVersion) != ErrorCode.None)
+            if (_MasterDb.VerifyVersionDataAsync(appVersion, masterVersion) != ErrorCode.None)
             {
                 await SetJsonResponse(context, ErrorCode.CheckUserGameDataNotMatch);
                 return;

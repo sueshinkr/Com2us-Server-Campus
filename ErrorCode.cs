@@ -34,10 +34,13 @@
     AuthTokenFailSetNx = 4006,
     SetJsonFailException = 4007,
 
-    MailDataLoadingFailNoData = 5001,
-    MailDataLoadingFailException = 5002,
-    MailReadingFailException = 5003,
-    MailItemReceivingFailAlreadyGet = 5004,
-    MailItemReceivingFailInsertItem = 5005,
-    MailItemReceivingFailException = 5006
+    MailDataLoadingFailWrongPage = 5001,
+    MailDataLoadingFailNoData = 5002,
+    MailDataLoadingFailException = 5003,
+    MailReadingFailException = 5004,
+    MailItemReceivingFailAlreadyGet = 5005,
+    MailItemReceivingFailInsertItem = 5006,
+    MailItemReceivingFailException = 5007,
+    MailDeletingFailAlreadyDelete = 5008,
+    MailDeletingFailException = 5009
 }
