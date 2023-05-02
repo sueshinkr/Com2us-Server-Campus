@@ -186,7 +186,7 @@ public class GameDb : IGameDb
     }
 
     // 메일 기본 데이터 로딩
-    // Mail_Data 테이블에서 메일 기본 정보 가져오기ㅊ
+    // Mail_Data 테이블에서 메일 기본 정보 가져오기
     public async Task<Tuple<ErrorCode, List<MailData>>> MailDataLoadingAsync(Int64 userid, Int64 pagenumber)
     {
         var maildata = new List<MailData>();
@@ -220,15 +220,23 @@ public class GameDb : IGameDb
 
     // 메일 본문 및 포함 아이템 읽기
     // Mail_Data 테이블에서 본문내용, Mail_Item 테이블에서 아이템 정보 가져오기
-    public async Task<Tuple<ErrorCode, string, List<MailItem>>> MailReadingAsync(Int64 mailid)
+    public async Task<Tuple<ErrorCode, string, List<MailItem>>> MailReadingAsync(Int64 mailid, Int64 userid)
     {
-        var content = new string("");
-        var mailitem = new List<MailItem>();
-
         try
         {
-            content = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("Content").FirstAsync<string>();
-            mailitem = await _queryFactory.Query("Mail_Item").Where("MailId", mailid).GetAsync<MailItem>() as List<MailItem>;
+            var maildata = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("UserId", "Content", "IsDelete").FirstOrDefaultAsync<MailData>();
+            if (maildata.UserId != userid)
+            {
+                _logger.ZLogError($"[MailReading] ErrorCode: {ErrorCode.MailReadingFailWrongUser}, MailId: {mailid}");
+                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.MailReadingFailWrongUser, null, null);
+            }
+            if (maildata.IsDelete == true)
+            {
+                _logger.ZLogError($"[MailReading] ErrorCode: {ErrorCode.MailReadingFailDeletedMail}, MailId: {mailid}");
+                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.MailReadingFailDeletedMail, null, null);
+            }
+            
+            var mailitem = await _queryFactory.Query("Mail_Item").Where("MailId", mailid).GetAsync<MailItem>() as List<MailItem>;
 
             await _queryFactory.Query("Mail_Data").Where("MailId", mailid).UpdateAsync(new
             {
@@ -237,10 +245,10 @@ public class GameDb : IGameDb
 
             if (mailitem.Count == 0)
             {
-                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, content, null);
+                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, maildata.Content, null);
             }
 
-            return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, content, mailitem);
+            return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, maildata.Content, mailitem);
         }
         catch (Exception ex)
         {
@@ -251,12 +259,23 @@ public class GameDb : IGameDb
 
     // 메일 아이템 수령
     // Mail_Item 테이블에서 아이템 정보 가져와서 User_Item 테이블에 추가
-    public async Task<ErrorCode> MailItemReceivingAsync(Int64 itemid, Int64 userid)
+    public async Task<ErrorCode> MailItemReceivingAsync(Int64 mailid, Int64 userid, Int64 itemid)
     {
         try
         {
-            var mailitem = await _queryFactory.Query("Mail_Item").Where("ItemId", itemid).FirstOrDefaultAsync<MailItem>();
+            var maildata = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("UserId", "IsDelete").FirstOrDefaultAsync<MailData>();
+            if (maildata.UserId != userid)
+            {
+                _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailWrongUser}, MailId: {mailid}");
+                return ErrorCode.MailItemReceivingFailWrongUser;
+            }
+            if (maildata.IsDelete == true)
+            {
+                _logger.ZLogError($"[MailReading] ErrorCode: {ErrorCode.MailItemReceivingFailDeletedMail}, MailId: {mailid}");
+                return ErrorCode.MailItemReceivingFailDeletedMail;
+            }
 
+            var mailitem = await _queryFactory.Query("Mail_Item").Where("ItemId", itemid).FirstOrDefaultAsync<MailItem>();
             if (mailitem.IsReveived == true)
             {
                 _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailAlreadyGet}, ItemId: {itemid}");
@@ -267,7 +286,7 @@ public class GameDb : IGameDb
             if (errorCode != ErrorCode.None)
             {
                 _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailInsertItem}, ItemId: {itemid}");
-                return errorCode;
+                return ErrorCode.MailItemReceivingFailInsertItem;
             }
             else
             {
@@ -288,12 +307,17 @@ public class GameDb : IGameDb
 
     // 메일 삭제
     // Mail_Data 테이블에서 논리적으로만 삭제
-    public async Task<ErrorCode> MailDeletingAsync(Int64 mailid)
+    public async Task<ErrorCode> MailDeletingAsync(Int64 mailid, Int64 userid)
     {
         try
         {
-            var isdelete = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("IsDelete").FirstAsync<bool>();
-            if (isdelete == true)
+            var maildata = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("UserId", "IsDelete").FirstAsync<MailData>();
+            if (maildata.UserId != userid)
+            {
+                _logger.ZLogError($"[MailDeleting] ErrorCode: {ErrorCode.MailDeletingFailWrongUser}, MailId: {mailid}");
+                return ErrorCode.MailDeletingFailWrongUser;
+            }
+            if (maildata.IsDelete == true)
             {
                 _logger.ZLogError($"[MailDeleting] ErrorCode: {ErrorCode.MailDeletingFailAlreadyDelete}, MailId: {mailid}");
                 return ErrorCode.MailDeletingFailAlreadyDelete;
@@ -304,9 +328,9 @@ public class GameDb : IGameDb
                 {
                     IsDelete = true
                 });
-            }
 
-            return ErrorCode.None;
+                return ErrorCode.None;
+            }
         }
         catch (Exception ex)
         {

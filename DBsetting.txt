@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS GameDb.`User_Data`
     Money BIGINT NOT NULL COMMENT '보유 재화',
     AttendanceCount TINYINT NOT NULL COMMENT '출석 횟수',
     ClearStage INT NOT NULL COMMENT '완료한 스테이지',
-    LastLogin DATETIME NOT NULL COMMENT '마지막 로그인 일시'
+    LastLogin DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '마지막 로그인 일시'
 ) COMMENT '유저 기본 정보';
 
 
@@ -210,15 +210,15 @@ CREATE TABLE IF NOT EXISTS GameDb.`Mail_Item`
 
 
 INSERT INTO Mail_Data (MailId, UserId, SenderId, Title, Content, hasItem, ExpiredAt)
-VALUES (1102525403530006521, 1, 0, '메일1', '------------------내용1---------------------', true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY));
+VALUES (1102887350800748544, 1, 0, '메일1', '------------------내용1---------------------', true, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 7 DAY));
 
 INSERT INTO Mail_Content
-VALUE (1102525403530006521, '------------------내용1---------------------');
+VALUE (1102887350800748544, '------------------내용1---------------------');
 
 INSERT INTO Mail_Item (MailId, ItemId, ItemCode, ItemCount)
-VALUE (1102525403530006521, 1102525403530106521, 6, 275),
-(1102525403530006521, 1202525403530106521, 2, 1),
-(1102525403530006521, 1302525403530106521, 3, 1); // 메일 1에 아이템 여러개
+VALUE (1102887350800748544, 1102525403530106521, 6, 275),
+(1102887350800748544, 1202525403530106521, 2, 1),
+(1102887350800748544, 1302525403530106521, 3, 1); // 메일 1에 아이템 여러개
 
 
 

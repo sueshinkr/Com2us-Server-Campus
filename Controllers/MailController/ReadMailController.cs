@@ -27,7 +27,7 @@ public class ReadMail : ControllerBase
         var response = new ReadMailResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.Content, response.Item) = await _gameDb.MailReadingAsync(request.MailId);
+        (var errorCode, response.Content, response.Item) = await _gameDb.MailReadingAsync(request.MailId, request.UserId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

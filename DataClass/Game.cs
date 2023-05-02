@@ -36,10 +36,18 @@ public class MailData
     public Int64 SenderId { get; set; }
 
     public string Title { get; set; }
+    public string Content { get; set; }
 
     public bool IsRead { get; set; }
     public bool HasItem { get; set; }
+    public bool IsDelete { get; set; }
 
     public DateTime ObtainedAt { get; set; }
     public DateTime ExpiredAt { get; set; }
+}
+
+public class CheckAttendance
+{
+    public Int64 Date;
+    public bool IsReceive;
 }

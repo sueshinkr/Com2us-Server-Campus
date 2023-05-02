@@ -6,26 +6,25 @@ using SqlKata.Execution;
 using ZLogger;
 
 namespace WebAPIServer.Controllers;
-
+/*
 [ApiController]
 [Route("[controller]")]
-public class CreateAccount: ControllerBase
+public class OpenAttendance: ControllerBase
 {
     readonly ILogger<CreateAccount> _logger;
-    readonly IAccountDb _accountDb;
+    readonly
     readonly IMasterDb _masterDb;
     readonly IGameDb _gameDb;
 
-    public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb, IMasterDb masterDb, IGameDb gameDb)
+    public OpenAttendance(ILogger<CreateAccount> logger, IMasterDb masterDb, IGameDb gameDb)
     {
         _logger = logger;
-        _accountDb = accountDb;
         _masterDb = masterDb;
         _gameDb = gameDb;
     }
 
     [HttpPost]
-    public async Task<CreateAccountResponse> Post(CreateAccountRequest request)
+    public async Task<OpenAttendanceResponse> Post(OpenAttendanceRequest request)
     {
         var response = new CreateAccountResponse();
         response.Result = ErrorCode.None;
@@ -55,3 +54,4 @@ public class CreateAccount: ControllerBase
         return response;
     }
 }
+*/
