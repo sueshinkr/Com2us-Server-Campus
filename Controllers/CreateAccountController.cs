@@ -30,8 +30,8 @@ public class CreateAccount: ControllerBase
         var response = new CreateAccountResponse();
         response.Result = ErrorCode.None;
 
-        // 계정 정보 추가
-        // Account 테이블에 유저 추가 
+        // 계정 정보 생성
+        // Account 테이블에 계정 추가 
         (var errorCode, response.AccountId) = await _accountDb.CreateAccountAsync(request.Email, request.Password);
         if (errorCode != ErrorCode.None)
         {
@@ -40,8 +40,8 @@ public class CreateAccount: ControllerBase
             return response;
         }
 
-        // 기본 데이터 생성작업
-        // UserData 테이블 / UserItem 테이블에 유저 추가
+        // 유저 기본 데이터 생성
+        // User_Data 테이블에 유저 추가 / User_Item 테이블에 아이템 추가
         errorCode = await _gameDb.CreateBasicDataAsync(response.AccountId);
         if (errorCode != ErrorCode.None)
         {

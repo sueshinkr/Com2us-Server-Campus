@@ -41,7 +41,7 @@ public class Login : ControllerBase
         }
 
         // 버전 데이터 검증
-        errorCode = await _redisDb.VerifyVersionDataAsync(request.AppVersion, request.MasterVersion);
+        errorCode = _redisDb.VerifyVersionDataAsync(request.AppVersion, request.MasterVersion);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

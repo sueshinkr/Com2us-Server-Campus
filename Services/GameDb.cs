@@ -38,7 +38,8 @@ public class GameDb : IGameDb
         GC.SuppressFinalize(this);
     }
 
-    // 기본 데이터 생성
+    // 유저 기본 데이터 생성
+    // User_Data 테이블에 유저 추가 / User_Item 테이블에 아이템 추가
     public async Task<ErrorCode> CreateBasicDataAsync(Int64 accountid)
     {
         try
@@ -74,13 +75,14 @@ public class GameDb : IGameDb
     }
 
     // 유저 데이터에 아이템 추가
+    // User_Item 테이블에 아이템 추가
     public async Task<ErrorCode> InsertItem(Int64 userid, Int64 itemcode, Int64 count)
     {
         try
         {
             var item = _MasterDb.ItemInfo.Find(i => i.Code == itemcode);
 
-            if (item.Type == "소모품")
+            if (item.Attribute == 4)
             {
                 var maxCount = 100;
 
@@ -127,7 +129,7 @@ public class GameDb : IGameDb
                     }
                 }
             }
-            else // 장비
+            else if (item.Attribute == 1 || item.Attribute == 2 || item.Attribute == 3)
             {
                 var itemid = _idGenerator.CreateId();
                 await _queryFactory.Query("User_Item").InsertAsync(new
@@ -149,6 +151,7 @@ public class GameDb : IGameDb
     }
 
     // 유저 기본 데이터 로딩
+    // User_Data 테이블에서 유저 기본 정보 가져오기
     public async Task<Tuple<ErrorCode, UserData>> UserDataLoading(Int64 accountid)
     {
         try
@@ -164,6 +167,7 @@ public class GameDb : IGameDb
     }
 
     // 유저 아이템 로딩
+    // User_Item 테이블에서 유저 아이템 정보 가져오기
     public async Task<Tuple<ErrorCode, List<UserItem>>> UserItemLoading(Int64 userid)
     {
         var useritem = new List<UserItem>();
@@ -182,6 +186,7 @@ public class GameDb : IGameDb
     }
 
     // 메일 기본 데이터 로딩
+    // Mail_Data 테이블에서 메일 기본 정보 가져오기
     public async Task<Tuple<ErrorCode, List<MailData>>> MailDataLoadingAsync(Int64 userid, Int64 pagenumber)
     {
         var maildata = new List<MailData>();
@@ -205,6 +210,7 @@ public class GameDb : IGameDb
     }
 
     // 메일 본문 및 포함 아이템 읽기
+    // Mail_Data 테이블에서 본문내용, Mail_Item 테이블에서 아이템 정보 가져오기
     public async Task<Tuple<ErrorCode, string, List<MailItem>>> MailReadingAsync(Int64 mailid)
     {
         var content = new string("");
@@ -214,6 +220,11 @@ public class GameDb : IGameDb
         {
             content = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("Content").FirstAsync<string>();
             mailitem = await _queryFactory.Query("Mail_Item").Where("MailId", mailid).GetAsync<MailItem>() as List<MailItem>;
+
+            await _queryFactory.Query("Mail_Data").Where("MailId", mailid).UpdateAsync(new
+            {
+                IsRead = true
+            });
 
             if (mailitem.Count == 0)
             {
@@ -230,6 +241,7 @@ public class GameDb : IGameDb
     }
 
     // 메일 아이템 수령
+    // Mail_Item 테이블에서 아이템 정보 가져와서 User_Item 테이블에 추가
     public async Task<ErrorCode> MailItemReceivingAsync(Int64 itemid, Int64 userid)
     {
         try

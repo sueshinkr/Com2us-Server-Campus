@@ -23,41 +23,11 @@ public class RedisDb : IRedisDb
         var Redisconfig = new RedisConfig("basic", RedisAddress);
         _redisConn = new RedisConnection(Redisconfig);
 
-        var errorCode = Task.Run(() => GetVersionDataAsync()).Result;
-        if (errorCode != ErrorCode.None)
-        {
-            return;
-        }
-        
         _logger.ZLogInformation("Redis Db Connected");
     }
 
-    public async Task<ErrorCode> GetVersionDataAsync()
-    {
-        var versiondata = new VersionData
-        {
-            AppVersion = _masterDb.VersionDataInfo.AppVersion,
-            MasterVersion = _masterDb.VersionDataInfo.MasterVersion
-        };
-
-        try
-        {
-            var redis = new RedisString<VersionData>(_redisConn, "VersionData", null);
-            if (await redis.SetAsync(versiondata).ConfigureAwait(false) == false)
-            {
-                _logger.ZLogError($"[GetVersionData] ErrorCode: {ErrorCode.GetVersionDataFailRedis}");
-                return ErrorCode.GetVersionDataFailRedis;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.ZLogError(ex, $"[GetVersionData] ErrorCode: {ErrorCode.GetVersionDataFailException}");
-            return ErrorCode.GetVersionDataFailException;
-        }
-
-        return ErrorCode.None;
-    }
-
+    // 유저 정보 생성
+    // Redis에 유저 추가
     public async Task<ErrorCode> RegistUserAsync(string email, string authToken, Int64 accountId)
     {
         var uid = "UID_" + accountId;
@@ -86,19 +56,13 @@ public class RedisDb : IRedisDb
         return ErrorCode.None;
     }
 
-    public async Task<ErrorCode> VerifyVersionDataAsync(double appVersion, double masterVersion)
+    // 게임 버전 검증
+    // MasterData에서 가져온 데이터를 바탕으로 검증
+    public ErrorCode VerifyVersionDataAsync(double appVersion, double masterVersion)
     {
         try
         {
-            var redis = new RedisString<VersionData>(_redisConn, "VersionData", null);
-            var versiondata = await redis.GetAsync();
-            if (!versiondata.HasValue)
-            {
-                _logger.ZLogError($"[VerifyVersionData] ErrorCode: {ErrorCode.VerifyVersionDataFailNoData}");
-                return ErrorCode.VerifyVersionDataFailNoData;
-            }
-
-            if (versiondata.Value.AppVersion != appVersion || versiondata.Value.MasterVersion != masterVersion)
+            if (_masterDb.VersionDataInfo.AppVersion != appVersion || _masterDb.VersionDataInfo.MasterVersion != masterVersion)
             {
                 return ErrorCode.LoginFailGameDataNotMatch;
             }

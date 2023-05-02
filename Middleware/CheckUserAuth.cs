@@ -67,7 +67,7 @@ public class CheckUserAuth
             }
 
             // 게임 데이터 확인
-            if (await _redisDb.VerifyVersionDataAsync(appVersion, masterVersion) != ErrorCode.None)
+            if (_redisDb.VerifyVersionDataAsync(appVersion, masterVersion) != ErrorCode.None)
             {
                 await SetJsonResponse(context, ErrorCode.CheckUserGameDataNotMatch);
                 return;

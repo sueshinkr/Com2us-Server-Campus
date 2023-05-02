@@ -37,6 +37,8 @@ public class AccountDb : IAccountDb
         GC.SuppressFinalize(this);
     }
 
+    // 계정 정보 생성
+    // Account 테이블에 계정 추가 
     public async Task<Tuple<ErrorCode, Int64>> CreateAccountAsync(string email, string password)
     {
         try
@@ -70,6 +72,8 @@ public class AccountDb : IAccountDb
         }
     }
 
+    // 계정 정보 검증
+    // Account 테이블의 데이터를 바탕으로 검증
     public async Task<Tuple<ErrorCode, Int64>> VerifyAccountAsync(string email, string password)
     {
         try
