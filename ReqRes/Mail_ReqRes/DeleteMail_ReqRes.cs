@@ -11,6 +11,7 @@ public class DeleteMailRequest
     public double AppVersion { get; set; }
     public double MasterVersion { get; set; }
     public Int64 MailId { get; set; }
+    public Int64 UserId { get; set; }
 }
 
 public class DeleteMailResponse

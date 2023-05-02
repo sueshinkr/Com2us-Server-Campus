@@ -10,7 +10,7 @@ public class ReceiveItemFromMailRequest
     public string AuthToken { get; set; }
     public double AppVersion { get; set; }
     public double MasterVersion { get; set; }
-    public Int64 ItemId { get; set; }
+    public Int64 MailId { get; set; }
     public Int64 UserId { get; set; }
 }
 

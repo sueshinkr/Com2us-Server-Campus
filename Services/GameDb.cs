@@ -76,7 +76,7 @@ public class GameDb : IGameDb
 
     // 유저 데이터에 아이템 추가
     // User_Item 테이블에 아이템 추가
-    public async Task<ErrorCode> InsertItem(Int64 userid, Int64 itemcode, Int64 count)
+    public async Task<ErrorCode> InsertItem(Int64 userid, Int64 itemcode, Int64 count, Int64 itemid = 0)
     {
         try
         {
@@ -94,7 +94,11 @@ public class GameDb : IGameDb
 
                     if (currentCount == 0)
                     {
-                        var itemid = _idGenerator.CreateId();
+                        if (itemid == 0)
+                        {
+                            itemid = _idGenerator.CreateId();
+                        }
+
                         await _queryFactory.Query("User_Item").InsertAsync(new
                         {
                             ItemId = itemid,
@@ -105,7 +109,11 @@ public class GameDb : IGameDb
                     }
                     else
                     {
-                        var itemid = itemdata.ItemId;
+                        if (itemid == 0)
+                        {
+                            itemid = _idGenerator.CreateId();
+                        }
+
                         await _queryFactory.Query("User_Item").Where("ItemId", itemid).UpdateAsync(new
                         {
                             Itemcount = insertcount
@@ -116,8 +124,13 @@ public class GameDb : IGameDb
 
                     while (count > 0)
                     {
+                        if (itemid == 0)
+                        {
+                            itemid = _idGenerator.CreateId();
+                        }
+
                         insertcount = Math.Min(count, maxCount);
-                        var itemid = _idGenerator.CreateId();
+
                         await _queryFactory.Query("User_Item").InsertAsync(new
                         {
                             ItemId = itemid,
@@ -131,7 +144,11 @@ public class GameDb : IGameDb
             }
             else if (item.Attribute == 1 || item.Attribute == 2 || item.Attribute == 3)
             {
-                var itemid = _idGenerator.CreateId();
+                if (itemid == 0)
+                {
+                    itemid = _idGenerator.CreateId();
+                }
+
                 await _queryFactory.Query("User_Item").InsertAsync(new
                 {
                     Itemid = itemid,
@@ -224,31 +241,30 @@ public class GameDb : IGameDb
     {
         try
         {
-            var maildata = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("UserId", "Content", "IsDelete").FirstOrDefaultAsync<MailData>();
-            if (maildata.UserId != userid)
+            var content = await _queryFactory.Query("Mail_Data").Where("MailId", mailid)
+                                             .Where("UserId", userid).Where("IsDelete", false)
+                                             .Select("Content").FirstOrDefaultAsync<string>();
+
+            if (content == null)
             {
-                _logger.ZLogError($"[MailReading] ErrorCode: {ErrorCode.MailReadingFailWrongUser}, MailId: {mailid}");
-                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.MailReadingFailWrongUser, null, null);
-            }
-            if (maildata.IsDelete == true)
-            {
-                _logger.ZLogError($"[MailReading] ErrorCode: {ErrorCode.MailReadingFailDeletedMail}, MailId: {mailid}");
-                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.MailReadingFailDeletedMail, null, null);
+                _logger.ZLogError($"[MailReading] ErrorCode: {ErrorCode.MailReadingFailWrongData}, MailId: {mailid}");
+                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.MailReadingFailWrongData, null, null);
             }
             
-            var mailitem = await _queryFactory.Query("Mail_Item").Where("MailId", mailid).GetAsync<MailItem>() as List<MailItem>;
+            var mailItem = await _queryFactory.Query("Mail_Item").Where("MailId", mailid)
+                                              .GetAsync<MailItem>() as List<MailItem>;
 
             await _queryFactory.Query("Mail_Data").Where("MailId", mailid).UpdateAsync(new
             {
                 IsRead = true
             });
 
-            if (mailitem.Count == 0)
+            if (mailItem.Count == 0)
             {
-                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, maildata.Content, null);
+                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, content, null);
             }
 
-            return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, maildata.Content, mailitem);
+            return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, content, mailItem);
         }
         catch (Exception ex)
         {
@@ -259,48 +275,53 @@ public class GameDb : IGameDb
 
     // 메일 아이템 수령
     // Mail_Item 테이블에서 아이템 정보 가져와서 User_Item 테이블에 추가
-    public async Task<ErrorCode> MailItemReceivingAsync(Int64 mailid, Int64 userid, Int64 itemid)
+    public async Task<ErrorCode> MailItemReceivingAsync(Int64 mailid, Int64 userid)
     {
+        // 한 메일 내의 아이템 일괄수령으로 변경
         try
         {
-            var maildata = await _queryFactory.Query("Mail_Data").Where("MailId", mailid).Select("UserId", "IsDelete").FirstOrDefaultAsync<MailData>();
-            if (maildata.UserId != userid)
+            var isCorrectRequest= await _queryFactory.Query("Mail_Data").Where("MailId", mailid)
+                                              .Where("UserId", userid).Where("IsDelete", false)
+                                              .Select("UserId", "IsDelete").ExistsAsync();
+
+            if (isCorrectRequest == false)
             {
-                _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailWrongUser}, MailId: {mailid}");
-                return ErrorCode.MailItemReceivingFailWrongUser;
-            }
-            if (maildata.IsDelete == true)
-            {
-                _logger.ZLogError($"[MailReading] ErrorCode: {ErrorCode.MailItemReceivingFailDeletedMail}, MailId: {mailid}");
-                return ErrorCode.MailItemReceivingFailDeletedMail;
+                _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailWrongData}, MailId: {mailid}");
+                return ErrorCode.MailItemReceivingFailWrongData;
             }
 
-            var mailitem = await _queryFactory.Query("Mail_Item").Where("ItemId", itemid).FirstOrDefaultAsync<MailItem>();
-            if (mailitem.IsReveived == true)
+            var mailitem = await _queryFactory.Query("Mail_Item").Where("MailId", mailid)
+                                              .GetAsync<MailItem>() as List<MailItem>;
+
+            foreach (MailItem item in mailitem)
             {
-                _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailAlreadyGet}, ItemId: {itemid}");
-                return ErrorCode.MailItemReceivingFailAlreadyGet;
+                if (item.IsReveived == true)
+                {
+                    _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailAlreadyGet}, ItemId: {item.ItemId}");
+                    return ErrorCode.MailItemReceivingFailAlreadyGet;
+                }
             }
 
-            var errorCode = await InsertItem(userid, mailitem.ItemCode, mailitem.ItemCount);
-            if (errorCode != ErrorCode.None)
+            foreach (MailItem item in mailitem)
             {
-                _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailInsertItem}, ItemId: {itemid}");
-                return ErrorCode.MailItemReceivingFailInsertItem;
-            }
-            else
-            {
-                await _queryFactory.Query("Mail_Item").Where("ItemId", itemid).UpdateAsync(new
+                var errorCode = await InsertItem(userid, item.ItemCode, item.ItemCount, item.ItemId);
+                if (errorCode != ErrorCode.None)
+                {
+                    _logger.ZLogError($"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailInsertItem}, ItemId: {item.ItemId}");
+                    return ErrorCode.MailItemReceivingFailInsertItem;
+                }
+
+                await _queryFactory.Query("Mail_Item").Where("ItemId", item.ItemId).UpdateAsync(new
                 {
                     IsReveived = true
                 });
             }
-
+           
             return ErrorCode.None;
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailException}, ItemId: {itemid}");
+            _logger.ZLogError(ex, $"[MailItemReceiving] ErrorCode: {ErrorCode.MailItemReceivingFailException}, MailId: {mailid}");
             return ErrorCode.MailItemReceivingFailException;
         }
     }
