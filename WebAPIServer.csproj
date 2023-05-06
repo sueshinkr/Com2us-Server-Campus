@@ -25,10 +25,14 @@
     <None Remove="Middleware\" />
     <None Remove="Controllers\MailController\" />
     <None Remove="RequestResponse\Mail_ReqRes\" />
+    <None Remove="Controllers\DungeonController\" />
+    <None Remove="ReqRes\Dungeon_ReqRes\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Middleware\" />
     <Folder Include="Controllers\MailController\" />
     <Folder Include="ReqRes\Mail_ReqRes\" />
+    <Folder Include="Controllers\DungeonController\" />
+    <Folder Include="ReqRes\Dungeon_ReqRes\" />
   </ItemGroup>
 </Project>

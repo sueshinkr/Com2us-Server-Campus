@@ -10,24 +10,26 @@ namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ReceiveItemFromMail : ControllerBase
+public class StageClear : ControllerBase
 {
     readonly ILogger<Login> _logger;
     readonly IGameDb _gameDb;
+    readonly IRedisDb _redisDb;
 
-    public ReceiveItemFromMail(ILogger<Login> logger, IGameDb gameDb)
+    public StageClear(ILogger<Login> logger, IGameDb gameDb, IRedisDb redisDb)
     {
         _logger = logger;
         _gameDb = gameDb;
+        _redisDb = redisDb;
     }
 
     [HttpPost]
-    public async Task<ReceiveItemFromMailResponse> Post(ReceiveItemFromMailRequest request)
+    public async Task<StageClearResponse> Post(StageClearRequest request)
     {
-        var response = new ReceiveItemFromMailResponse();
+        var response = new StageClearResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.Item) = await _gameDb.MailItemReceivingAsync(request.MailId, request.UserId);
+        var errorCode = await _redisDb.CheckStageClearAsync(request.UserId, request.StageCode);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

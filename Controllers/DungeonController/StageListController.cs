@@ -10,24 +10,24 @@ namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ReceiveItemFromMail : ControllerBase
+public class StageList : ControllerBase
 {
     readonly ILogger<Login> _logger;
     readonly IGameDb _gameDb;
 
-    public ReceiveItemFromMail(ILogger<Login> logger, IGameDb gameDb)
+    public StageList(ILogger<Login> logger, IGameDb gameDb)
     {
         _logger = logger;
         _gameDb = gameDb;
     }
 
     [HttpPost]
-    public async Task<ReceiveItemFromMailResponse> Post(ReceiveItemFromMailRequest request)
+    public async Task<StageListResponse> Post(StageListRequest request)
     {
-        var response = new ReceiveItemFromMailResponse();
+        var response = new StageListResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.Item) = await _gameDb.MailItemReceivingAsync(request.MailId, request.UserId);
+        (var errorCode, response.ClearStage) = await _gameDb.StageListLoadingAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

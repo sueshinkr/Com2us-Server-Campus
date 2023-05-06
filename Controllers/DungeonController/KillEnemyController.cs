@@ -10,24 +10,24 @@ namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class OpenMail : ControllerBase
+public class KillEnemy : ControllerBase
 {
     readonly ILogger<Login> _logger;
-    readonly IGameDb _gameDb;
+    readonly IRedisDb _redisDb;
 
-    public OpenMail(ILogger<Login> logger, IGameDb gameDb)
+    public KillEnemy(ILogger<Login> logger, IRedisDb redisDb)
     {
         _logger = logger;
-        _gameDb = gameDb;
+        _redisDb = redisDb;
     }
 
     [HttpPost]
-    public async Task<OpenMailResponse> Post(OpenMailRequest request)
+    public async Task<KillEnemyResponse> Post(KillEnemyRequest request)
     {
-        var response = new OpenMailResponse();
+        var response = new KillEnemyResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.mailData) = await _gameDb.MailDataLoadingAsync(request.UserId, request.PageNumber);
+        var errorCode = await _redisDb.KillEnemyAsync(request.UserId, request.StageCode, request.EnemyCode);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

@@ -4,6 +4,7 @@ using CloudStructures.Structures;
 using ZLogger;
 using Microsoft.Extensions.Logging;
 using SqlKata.Execution;
+using StackExchange.Redis;
 
 namespace WebAPIServer.Services;
 
@@ -27,7 +28,7 @@ public class RedisDb : IRedisDb
     }
 
     // 유저 정보 생성
-    // Redis에 유저 추가
+    // accountId로 키밸류 추가
     public async Task<ErrorCode> RegistUserAsync(string email, string authToken, Int64 accountId)
     {
         var uid = "UID_" + accountId;
@@ -42,20 +43,21 @@ public class RedisDb : IRedisDb
             var redis = new RedisString<AuthUser>(_redisConn, uid, LoginTimeSpan());
             if (await redis.SetAsync(user, LoginTimeSpan()) == false)
             {
-                _logger.ZLogError($"[RegistUserAsync] ErrorCode: {ErrorCode.LoginFailRegistUser}, Email: {email}");
-
+                _logger.ZLogError($"[RegistUser] ErrorCode: {ErrorCode.LoginFailRegistUser}, Email: {email}");
                 return ErrorCode.LoginFailRegistUser;
             }
+
+            return ErrorCode.None;
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[RegistUserAsync] ErrorCode: {ErrorCode.RegistUserFailException}, Email: {email}");
+            _logger.ZLogError(ex, $"[RegistUser] ErrorCode: {ErrorCode.RegistUserFailException}, Email: {email}");
             return ErrorCode.RegistUserFailException;
         }
-
-        return ErrorCode.None;
     }
 
+    // 유저 정보 가져오기
+    // accountId 유저 정보 가져옴
     public async Task<AuthUser> GetUserAsync(Int64 accountid)
     {
         var uid = "UID_" + accountid;
@@ -66,18 +68,20 @@ public class RedisDb : IRedisDb
             var user = await redis.GetAsync();
             if (!user.HasValue)
             {
-                _logger.ZLogError($"[GetUserAsync] UID:{uid} is Not Assigned User");
+                _logger.ZLogError($"[GetUser] UID:{uid} is Not Assigned User");
                 return null;
             }
             return (user.Value);
         }
         catch
         {
-            _logger.ZLogError($"[GetUserAsync] UID:{uid} does Not Exist");
+            _logger.ZLogError($"[GetUser] UID:{uid} does Not Exist");
             return null;
         }
     }
 
+    // 락걸기
+    // 
     public async Task<bool> SetUserReqLockAsync(string userLockKey)
     {
         try
@@ -96,6 +100,7 @@ public class RedisDb : IRedisDb
         }
     }
 
+    // 락해제
     public async Task<bool> DelUserReqLockAsync(string userLockKey)
     {
         if (string.IsNullOrEmpty(userLockKey))
@@ -115,6 +120,8 @@ public class RedisDb : IRedisDb
         }
     }
 
+    // 공지 가져오기
+    // 이게 맞을까...?
     public async Task<Tuple<ErrorCode, byte[]>> NotificationLoading()
     {
         try
@@ -146,6 +153,175 @@ public class RedisDb : IRedisDb
         {
             _logger.ZLogError(ex, $"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailException}");
             return new Tuple<ErrorCode, byte[]>(ErrorCode.NotificationLoadingFailException, null);
+        }
+    }
+
+    // 스테이지 진행 정보 생성
+    // UserId로 키 생성
+    public async Task<ErrorCode> CreateStageProgressDataAsync(Int64 userId)
+    {
+        var stageItemKey = "Stage_" + userId + "_Item";
+        var stageEnemyKey = "Stage_" + userId + "_Enemy";
+
+        try
+        {
+            var item = new RedisString<List<Tuple<Int64, Int64>>>(_redisConn, stageItemKey, null);
+            var enemy = new RedisString<List<Tuple<Int64, Int64>>>(_redisConn, stageEnemyKey, null);
+
+            if (await item.SetAsync(null) == false || await enemy.SetAsync(null) == false)
+            {
+                _logger.ZLogError($"[CreateStageProgressData] ErrorCode: {ErrorCode.StageSelectingFailCreateStageProgressData}, UserId: {userId}");
+                return ErrorCode.StageSelectingFailCreateStageProgressData;
+            }
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, $"[CreateStageProgressData] ErrorCode: {ErrorCode.CreateStageProgressDataFailException}, UserId: {userId}");
+            return ErrorCode.CreateStageProgressDataFailException;
+        }
+    }
+
+    // 스테이지 아이템 획득
+    // 유저의 stageItemKey에 아이템 추가
+    public async Task<ErrorCode> ObtainItemAsync(Int64 userId, Int64 stageCode, Int64 itemCode, Int64 itemCount)
+    {
+        var isRightItem = _masterDb.StageItemInfo.Find(i => i.Code == stageCode && i.ItemCode == itemCode);
+
+        if (isRightItem == null)
+        {
+            _logger.ZLogError($"[ObtainItem] ErrorCode: {ErrorCode.ObtainItemFailWrongItem}, UserId: {userId}");
+            return ErrorCode.ObtainItemFailWrongItem;
+        }
+
+        var stageItemKey = "Stage_" + userId + "_Item";
+
+        try
+        {
+            var redis = new RedisString<List<Tuple<Int64, Int64>>>(_redisConn, stageItemKey, null);
+            var itemResult = await redis.GetAsync();
+
+            if (itemResult.HasValue == false)
+            {
+                _logger.ZLogError($"[ObtainItem] ErrorCode: {ErrorCode.ObtainItemFailNoUserData}, UserId: {userId}");
+                return ErrorCode.ObtainItemFailNoUserData;
+            }
+
+            var itemlist = itemResult.Value;
+            var index = itemlist.FindIndex(i => i.Item1 == itemCode);
+
+            if (index >= 0)
+            {
+                itemlist[index] = new Tuple<Int64, Int64>(itemCode, itemlist[index].Item2 + itemCount);
+            }
+            else
+            {
+                itemlist.Add(new Tuple<Int64, Int64>(itemCode, itemCount));
+            }
+
+            if (await redis.SetAsync(itemlist) == false)
+            {
+                _logger.ZLogError($"[ObtainItem] ErrorCode: {ErrorCode.ObtainItemFailRedis}, UserId: {userId}");
+                return ErrorCode.ObtainItemFailRedis;
+            }
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, $"[ObtainItem] ErrorCode: {ErrorCode.ObtainItemFailException}, UserId: {userId}");
+            return ErrorCode.ObtainItemFailException;
+        }
+    }
+
+    // 스테이지 적 제거 
+    // 유저의 stageEnemyKey에 적 추가
+    public async Task<ErrorCode> KillEnemyAsync(Int64 userId, Int64 stageCode, Int64 enemyCode)
+    {
+        var isRightEnemy = _masterDb.StageEnemyInfo.Find(i => i.Code == stageCode && i.NpcCode == enemyCode);
+
+        if (isRightEnemy == null)
+        {
+            _logger.ZLogError($"[KillEnemy] ErrorCode: {ErrorCode.KillEnemyFailWrongEnemy}, UserId: {userId}");
+            return ErrorCode.KillEnemyFailWrongEnemy;
+        }
+
+        var stageEnemyKey = "Stage_" + userId + "_Enemy";
+
+        try
+        {
+            var redis = new RedisString<List<Tuple<Int64, Int64>>>(_redisConn, stageEnemyKey, null);
+            var enemyResult = await redis.GetAsync();
+
+            if (enemyResult.HasValue == false)
+            {
+                _logger.ZLogError($"[KillEnemy] ErrorCode: {ErrorCode.KillEnemyFailNoUserData}, UserId: {userId}");
+                return ErrorCode.KillEnemyFailNoUserData;
+            }
+
+            var enemylist = enemyResult.Value;
+            var index = enemylist.FindIndex(i => i.Item1 == enemyCode);
+
+            if (index >= 0)
+            {
+                enemylist[index] = new Tuple<Int64, Int64>(enemyCode, enemylist[index].Item2 + 1);
+            }
+            else
+            {
+                enemylist.Add(new Tuple<Int64, Int64>(enemyCode, 1));
+            }
+
+            if (await redis.SetAsync(enemylist) == false)
+            {
+                _logger.ZLogError($"[KillEnemy] ErrorCode: {ErrorCode.KillEnemyFailRedis}, UserId: {userId}");
+
+                return ErrorCode.KillEnemyFailRedis;
+            }
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, $"[ObtainItem] ErrorCode: {ErrorCode.KillEnemyFailException}, UserId: {userId}");
+            return ErrorCode.KillEnemyFailException;
+        }
+    }
+
+    // 스테이지 클리어 확인
+    // MasterData의 StageEnemy 데이터와 redis에 저장해놓은 데이터 비교 
+    public async Task<ErrorCode> CheckStageClearAsync(Int64 userId, Int64 stageCode)
+    {
+        var stageEnemyKey = "Stage_" + userId + "_Enemy";
+
+        try
+        {
+            var redis = new RedisString<List<Tuple<Int64, Int64>>>(_redisConn, stageEnemyKey, null);
+            var enemyResult = await redis.GetAsync();
+
+            if (enemyResult.HasValue == false)
+            {
+                _logger.ZLogError($"[CheckStageClear] ErrorCode: {ErrorCode.CheckStageClearFailNoUserData}, UserId: {userId}");
+                return ErrorCode.CheckStageClearFailNoUserData;
+            }
+
+            var enemylist = enemyResult.Value;
+
+            foreach(StageEnemy stageEnemy in _masterDb.StageEnemyInfo)
+            {
+                if (enemylist.Find(i => i.Item1 == stageEnemy.Code && i.Item2 == stageEnemy.Count) == null)
+                {
+                    _logger.ZLogError($"[CheckStageClear] ErrorCode: {ErrorCode.CheckStageClearFailWrongData}, UserId: {userId}");
+                    return ErrorCode.CheckStageClearFailWrongData;
+                }
+            }
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, $"[CheckStageClear] ErrorCode: {ErrorCode.CheckStageClearFailException}, UserId: {userId}");
+            return ErrorCode.CheckStageClearFailException;
         }
     }
 

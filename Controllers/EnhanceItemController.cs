@@ -9,33 +9,29 @@ namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class OpenAttendance : ControllerBase
+public class EnhanceItem : ControllerBase
 {
     readonly ILogger<Login> _logger;
     readonly IGameDb _gameDb;
-    readonly IMasterDb _masterDb;
 
-    public OpenAttendance(ILogger<Login> logger, IGameDb gameDb, IMasterDb masterDb)
+    public EnhanceItem(ILogger<Login> logger, IGameDb gameDb)
     {
         _logger = logger;
         _gameDb = gameDb;
-        _masterDb = masterDb;
     }
 
     [HttpPost]
-    public async Task<OpenAttendanceResponse> Post(OpenAttendanceRequest request)
+    public async Task<EnhanceItemResponse> Post(EnhanceItemRequest request)
     {
-        var response = new OpenAttendanceResponse();
+        var response = new EnhanceItemResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.attendanceCount, response.IsNewAttendance) = await _gameDb.AttendanceDataLoadingAsync(request.UserId);
+        (var errorCode, response.userItem) = await _gameDb.ItemEnhancingAsync(request.UserId, request.ItemId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
-
-        response.attendanceReward = _masterDb.AttendanceRewardInfo;
 
         return response;
     }

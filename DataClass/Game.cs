@@ -9,6 +9,8 @@ public class UserData
     public Int64 Money { get; set; }
     public Int64 AttendanceCount { get; set; }
     public Int64 ClearStage { get; set; }
+    public DateTime LastLogin { get; set; }
+    public DateTime LastAttendance { get; set; }
 }
 
 public class UserItem
@@ -17,7 +19,11 @@ public class UserItem
     public Int64 UserId { get; set; }
     public Int64 ItemCode { get; set; }
     public Int64 ItemCount { get; set; }
+    public Int64 Attack { get; set; }
+    public Int64 Defence { get; set; }
+    public Int64 Magic { get; set; }
     public Int64 EnhanceCount { get; set; }
+    public bool IsDestoryed { get; set; }
     public DateTime ObtainedAt { get; set; }
 }
 
@@ -26,7 +32,7 @@ public class MailItem
     public Int64 ItemId { get; set; }
     public Int64 ItemCode { get; set; }
     public Int64 ItemCount { get; set; }
-    public bool IsReveived { get; set; }
+    public bool IsReceived { get; set; }
 }
 
 public class MailData
@@ -40,14 +46,8 @@ public class MailData
 
     public bool IsRead { get; set; }
     public bool HasItem { get; set; }
-    public bool IsDelete { get; set; }
+    public bool IsDeleted { get; set; }
 
     public DateTime ObtainedAt { get; set; }
     public DateTime ExpiredAt { get; set; }
-}
-
-public class CheckAttendance
-{
-    public Int64 Date;
-    public bool IsReceive;
 }

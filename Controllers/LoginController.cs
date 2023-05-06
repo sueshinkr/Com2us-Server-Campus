@@ -72,7 +72,7 @@ public class Login : ControllerBase
         var userid = response.userData.UserId;
 
         // 아이템 로딩
-        (errorCode, response.userItem) = await _gameDb.UserItemLoading(userid);
+        (errorCode, response.userItem) = await _gameDb.UserItemLoadingAsync(userid);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

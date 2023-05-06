@@ -21,10 +21,11 @@
     NotificationLoadingFailGetImageFromUrl = 2010,
     NotificationLoadingFailException = 2011,
 
-
     InsertItemFailException = 3001,
-    UserDataLoadingFailException = 3002,
-    UserItemLoadingFailException = 3003,
+    DeleteItemFailException = 3002,
+    DeleteItemFailWrongData = 3003,
+    UserDataLoadingFailException = 3004,
+    UserItemLoadingFailException = 3005,
 
     EmptyRequestHttpBody = 4001,
     InvalidRequestHttpBody = 4002,
@@ -43,7 +44,39 @@
     MailItemReceivingFailAlreadyGet = 5007,
     MailItemReceivingFailInsertItem = 5008,
     MailItemReceivingFailException = 5009,
-    MailDeletingFailWrongUser = 5010,
-    MailDeletingFailAlreadyDelete = 5011,
-    MailDeletingFailException = 5012
+    MailDeletingFailWrongData = 5010,
+    MailDeletingFailException = 5011,
+
+    AttendanceDataLoadingFailWrongData = 6001,
+    AttendanceDataLoadingFailSendMail = 6002,
+    AttendanceDataLoadingFailException = 6003,
+    AttendanceRewardMailSendingFailException = 6004,
+
+    InAppPurchasingFailDuplicate = 7001,
+    InAppPurchasingFailException = 7002,
+    InAppPurchasingMailSendingFailException = 7003,
+
+    ItemEnhancingFailWrongData = 8001,
+    ItemEnhancingFailNotEnhanceable = 8002,
+    ItemEnhancingFailAlreadyMax = 8003,
+    ItemEnhancingFailNotEnoughMoney = 8004,
+    ItemEnhancingFailException = 8005,
+
+    StageLoadingFailException = 9001,
+    StageSelectingFailNotQualified = 9002,
+    StageSelectingFailException = 9003,
+    StageSelectingFailCreateStageProgressData = 9004,
+    CreateStageProgressDataFailException = 9005,
+    ObtainItemFailWrongItem = 9006,
+    ObtainItemFailNoUserData = 9007,
+    ObtainItemFailRedis = 9008,
+    ObtainItemFailException = 9009,
+
+    KillEnemyFailWrongEnemy = 9010,
+    KillEnemyFailNoUserData = 9011,
+    KillEnemyFailRedis = 9012,
+    KillEnemyFailException = 9013,
+    CheckStageClearFailNoUserData = 9014,
+    CheckStageClearFailWrongData = 9015,
+    CheckStageClearFailException = 9016
 }

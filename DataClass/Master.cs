@@ -18,7 +18,6 @@ public class Item
     public Int64 Defence { get; }
     public Int64 Magic { get; }
     public Int64 EnhanceMaxCount { get; }
-    public string Type { get; }
 }
 
 public class ItemAttribute

@@ -4,7 +4,7 @@ using WebAPIServer.DataClass;
 
 namespace WebAPIServer.RequestResponse;
 
-public class OpenMailRequest
+public class OpenMailBoxRequest
 {
     public Int64 AccountId { get; set; }
     public string AuthToken { get; set; }
@@ -14,7 +14,7 @@ public class OpenMailRequest
     public Int64 PageNumber { get; set; }
 }
 
-public class OpenMailResponse
+public class OpenMailBoxResponse
 {
     public ErrorCode Result { get; set; }
     public List<MailData> mailData { get; set; }
