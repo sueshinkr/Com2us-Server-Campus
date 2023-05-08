@@ -1,6 +1,6 @@
 ﻿using WebAPIServer.DataClass;
 
-namespace WebAPIServer.Services;
+namespace WebAPIServer.DbOperations;
 
 public interface IAccountDb : IDisposable
 {

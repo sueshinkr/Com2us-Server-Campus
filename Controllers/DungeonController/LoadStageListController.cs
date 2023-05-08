@@ -4,32 +4,30 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 
 namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class StageClear : ControllerBase
+public class LoadStageList : ControllerBase
 {
     readonly ILogger<Login> _logger;
     readonly IGameDb _gameDb;
-    readonly IRedisDb _redisDb;
 
-    public StageClear(ILogger<Login> logger, IGameDb gameDb, IRedisDb redisDb)
+    public LoadStageList(ILogger<Login> logger, IGameDb gameDb)
     {
         _logger = logger;
         _gameDb = gameDb;
-        _redisDb = redisDb;
     }
 
     [HttpPost]
-    public async Task<StageClearResponse> Post(StageClearRequest request)
+    public async Task<LoadStageListResponse> Post(LoadStageListRequest request)
     {
-        var response = new StageClearResponse();
+        var response = new LoadStageListResponse();
         response.Result = ErrorCode.None;
 
-        var errorCode = await _redisDb.CheckStageClearAsync(request.UserId, request.StageCode);
+        (var errorCode, response.ClearStage) = await _gameDb.LoadStageListAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

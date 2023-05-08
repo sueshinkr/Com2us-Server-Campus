@@ -9,7 +9,7 @@ using SqlKata.Execution;
 using WebAPIServer.DataClass;
 using ZLogger;
 
-namespace WebAPIServer.Services;
+namespace WebAPIServer.DbOperations;
 
 public class MasterDb : IMasterDb
 {

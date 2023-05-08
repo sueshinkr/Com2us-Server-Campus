@@ -249,9 +249,9 @@ DROP TABLE IF EXISTS GameDb.`ClearStage`;
 CREATE TABLE IF NOT EXISTS GameDb.`ClearStage`
 (
     UserId BIGINT NOT NULL COMMENT '계정번호',
-    StageCode INT NOT NULL COMMNET '스테이지 번호',
+    StageCode INT NOT NULL COMMENT '스테이지 번호',
+    ClearRank TINYINT NOT NULL COMMENT '클리어 랭크',
     ClearTime TIME(3) NOT NULL COMMENT '클리어타임',
-    ClearRank INT NOT NULL COMMENT '클리어 랭크',
     PRIMARY KEY (UserId, StageCode)
 ) COMMENT '클리어한 스테이지 정보';
 

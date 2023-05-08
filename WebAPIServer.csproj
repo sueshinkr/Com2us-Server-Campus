@@ -27,6 +27,8 @@
     <None Remove="RequestResponse\Mail_ReqRes\" />
     <None Remove="Controllers\DungeonController\" />
     <None Remove="ReqRes\Dungeon_ReqRes\" />
+    <None Remove="DbOperations\GameDb\" />
+    <None Remove="DbOperations\RedisDb\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Middleware\" />
@@ -34,5 +36,7 @@
     <Folder Include="ReqRes\Mail_ReqRes\" />
     <Folder Include="Controllers\DungeonController\" />
     <Folder Include="ReqRes\Dungeon_ReqRes\" />
+    <Folder Include="DbOperations\GameDb\" />
+    <Folder Include="DbOperations\RedisDb\" />
   </ItemGroup>
 </Project>

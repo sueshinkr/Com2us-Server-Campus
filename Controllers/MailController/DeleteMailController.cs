@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 
 namespace WebAPIServer.Controllers;
 
@@ -27,7 +27,7 @@ public class DeleteMail : ControllerBase
         var response = new DeleteMailResponse();
         response.Result = ErrorCode.None;
 
-        var errorCode = await _gameDb.MailDeletingAsync(request.MailId, request.UserId);
+        var errorCode = await _gameDb.DeleteMailAsync(request.MailId, request.UserId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

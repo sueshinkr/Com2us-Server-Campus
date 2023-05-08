@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using WebAPIServer.DataClass;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 using ZLogger;
 
 namespace WebAPIServer.Middleware;
@@ -75,7 +75,7 @@ public class CheckUserAuth
             }
 
             // User Regist 여부 확인
-            var userInfo = await _redisDb.GetUserAsync(accountId);
+            var userInfo = await _redisDb.GetUserDataAsync(accountId);
             if (userInfo == null)
             {
                 await SetJsonResponse(context, ErrorCode.UserNotRegisted);

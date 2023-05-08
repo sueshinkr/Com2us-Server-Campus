@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
@@ -28,7 +28,7 @@ public class OpenAttendance : ControllerBase
         var response = new OpenAttendanceResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.attendanceCount, response.IsNewAttendance) = await _gameDb.AttendanceDataLoadingAsync(request.UserId);
+        (var errorCode, response.attendanceCount, response.IsNewAttendance) = await _gameDb.LoadAttendanceDataAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

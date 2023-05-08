@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 
 namespace WebAPIServer.Controllers;
 
@@ -27,7 +27,7 @@ public class ReadMail : ControllerBase
         var response = new ReadMailResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.Content, response.Item) = await _gameDb.MailReadingAsync(request.MailId, request.UserId);
+        (var errorCode, response.Content, response.Item) = await _gameDb.ReadMailAsync(request.MailId, request.UserId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

@@ -4,19 +4,19 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 
 namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class StageSelect : ControllerBase
+public class ClearStage : ControllerBase
 {
     readonly ILogger<Login> _logger;
     readonly IGameDb _gameDb;
     readonly IRedisDb _redisDb;
 
-    public StageSelect(ILogger<Login> logger, IGameDb gameDb, IRedisDb redisDb)
+    public ClearStage(ILogger<Login> logger, IGameDb gameDb, IRedisDb redisDb)
     {
         _logger = logger;
         _gameDb = gameDb;
@@ -24,24 +24,28 @@ public class StageSelect : ControllerBase
     }
 
     [HttpPost]
-    public async Task<StageSelectResponse> Post(StageSelectRequest request)
+    public async Task<ClearStageResponse> Post(ClearStageRequest request)
     {
-        var response = new StageSelectResponse();
+        var response = new ClearStageResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.stageItem, response.stageEnemy) = await _gameDb.StageSelectingAsync(request.UserId, request.StageNum);
+        (var errorCode, var itemList) = await _redisDb.CheckStageClearAsync(request.UserId, request.StageCode);
+        if (errorCode != ErrorCode.None)
+        {
+            await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+
+            response.Result = errorCode;
+            return response;
+        }
+
+        errorCode = await _gameDb.GetStageClearRewardAsync(request.UserId, request.StageCode, request.ClearRank, request.ClearTime, itemList);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
 
-        errorCode = await _redisDb.CreateStageProgressDataAsync(request.UserId);
-        if (errorCode != ErrorCode.None)
-        {
-            response.Result = errorCode;
-            return response;
-        }
+        await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
 
         return response;
     }

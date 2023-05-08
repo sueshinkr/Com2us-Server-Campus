@@ -1,7 +1,7 @@
 ﻿using System;
 using WebAPIServer.DataClass;
 
-namespace WebAPIServer.Services;
+namespace WebAPIServer.DbOperations;
 
 public interface IMasterDb
 {

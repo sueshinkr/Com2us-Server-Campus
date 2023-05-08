@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
@@ -9,24 +9,24 @@ namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class InAppPurchase : ControllerBase
+public class PurchaseInAppProduct : ControllerBase
 {
     readonly ILogger<Login> _logger;
     readonly IGameDb _gameDb;
 
-    public InAppPurchase(ILogger<Login> logger, IGameDb gameDb)
+    public PurchaseInAppProduct(ILogger<Login> logger, IGameDb gameDb)
     {
         _logger = logger;
         _gameDb = gameDb;
     }
 
     [HttpPost]
-    public async Task<InAppPurchaseResponse> Post(InAppPurchaseRequest request)
+    public async Task<PurchaseInAppProductResponse> Post(PurchaseInAppProductRequest request)
     {
-        var response = new InAppPurchaseResponse();
+        var response = new PurchaseInAppProductResponse();
         response.Result = ErrorCode.None;
 
-        var errorCode = await _gameDb.InAppPurchasingAsync(request.UserId, request.PurchaseId, request.ProductCode);
+        var errorCode = await _gameDb.PurchaseInAppProductAsync(request.UserId, request.PurchaseId, request.ProductCode);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

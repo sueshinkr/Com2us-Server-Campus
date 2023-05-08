@@ -1,4 +1,4 @@
-﻿using WebAPIServer.Services;
+﻿using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Extensions;
@@ -52,7 +52,7 @@ public class Login : ControllerBase
 
         // 인증키 생성
         var authToken = Security.RandomString(25);
-        errorCode = await _redisDb.RegistUserAsync(request.Email, authToken, accountId);
+        errorCode = await _redisDb.CreateUserDataAsync(request.Email, authToken, accountId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

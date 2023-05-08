@@ -6,7 +6,7 @@ using SqlKata.Execution;
 using ZLogger;
 using IdGen;
 
-namespace WebAPIServer.Services;
+namespace WebAPIServer.DbOperations;
 
 public class AccountDb : IAccountDb
 {

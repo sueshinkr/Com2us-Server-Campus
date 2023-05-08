@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
@@ -26,7 +26,7 @@ public class EnhanceItem : ControllerBase
         var response = new EnhanceItemResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.userItem) = await _gameDb.ItemEnhancingAsync(request.UserId, request.ItemId);
+        (var errorCode, response.userItem) = await _gameDb.EnhanceItemAsync(request.UserId, request.ItemId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

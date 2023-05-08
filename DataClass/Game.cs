@@ -51,3 +51,10 @@ public class MailData
     public DateTime ObtainedAt { get; set; }
     public DateTime ExpiredAt { get; set; }
 }
+
+public class ClearData
+{
+    public Int64 StageCode { get; set; }
+    public TimeSpan ClearTime { get; set; }
+    public Int64 ClearRank { get; set; }
+}

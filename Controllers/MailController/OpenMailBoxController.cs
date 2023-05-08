@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 
 namespace WebAPIServer.Controllers;
 
@@ -27,7 +27,7 @@ public class OpenMailBox : ControllerBase
         var response = new OpenMailBoxResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.mailData) = await _gameDb.MailDataLoadingAsync(request.UserId, request.PageNumber);
+        (var errorCode, response.mailData) = await _gameDb.LoadMailDataAsync(request.UserId, request.PageNumber);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

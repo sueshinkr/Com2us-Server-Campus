@@ -4,18 +4,19 @@ using WebAPIServer.DataClass;
 
 namespace WebAPIServer.RequestResponse;
 
-public class InAppPurchaseRequest
+public class ClearStageRequest
 {
     public Int64 AccountId { get; set; }
     public string AuthToken { get; set; }
     public double AppVersion { get; set; }
     public double MasterVersion { get; set; }
     public Int64 UserId { get; set; }
-    public Int64 PurchaseId { get; set; }
-    public Int64 ProductCode { get; set; }
+    public Int64 StageCode { get; set; }
+    public Int64 ClearRank { get; set; }
+    public TimeSpan ClearTime { get; set; }
 }
 
-public class InAppPurchaseResponse
+public class ClearStageResponse
 {
     public ErrorCode Result { get; set; }
 }

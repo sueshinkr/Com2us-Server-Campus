@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
-using WebAPIServer.Services;
+using WebAPIServer.DbOperations;
 
 namespace WebAPIServer.Controllers;
 
@@ -30,6 +30,8 @@ public class KillEnemy : ControllerBase
         var errorCode = await _redisDb.KillEnemyAsync(request.UserId, request.StageCode, request.EnemyCode);
         if (errorCode != ErrorCode.None)
         {
+            await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+
             response.Result = errorCode;
             return response;
         }
