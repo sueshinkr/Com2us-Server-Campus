@@ -107,9 +107,16 @@ public partial class GameDb : IGameDb
                 }
             }
 
+            var userItem = new List<UserItem>();
+
             foreach (MailItem item in mailItem)
             {
                 var errorCode = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, item.ItemId);
+
+                if (item.ItemCode != 1) // 돈 얻은거는 안알려줘도 되나...?
+                {
+                    userItem.Add(await _queryFactory.Query("User_Item").Where("ItemId", item.ItemId).FirstOrDefaultAsync<UserItem>());
+                }
 
                 if (errorCode != ErrorCode.None)
                 {
@@ -129,9 +136,6 @@ public partial class GameDb : IGameDb
 
             await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
                                .UpdateAsync(new { HasItem = false });
-
-            var userItem = await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
-                                              .GetAsync<UserItem>() as List<UserItem>;
 
             return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.None, userItem);
         }

@@ -37,7 +37,8 @@ public partial class GameDb : IGameDb
                                    .UpdateAsync(new
                                    {
                                        LastAttendance = DateTime.Now,
-                                       AttendanceCount = attendanceCount
+                                       AttendanceCount = attendanceCount,
+                                       IsReceiveAttendanceReward = false
                                    });
             }
             else //if (userdata.LastAttendance.Day < DateTime.Now.Day)
@@ -48,7 +49,8 @@ public partial class GameDb : IGameDb
                                    .UpdateAsync(new
                                    {
                                        LastAttendance = DateTime.Now,
-                                       AttendanceCount = attendanceCount
+                                       AttendanceCount = attendanceCount,
+                                       IsReceiveAttendanceReward = false
                                    });
             }
 
@@ -63,21 +65,29 @@ public partial class GameDb : IGameDb
 
     // 출석 보상 메일 전송
     // Mail_data 및 Mail_Item 테이블에 데이터 추가
-    public async Task<ErrorCode> SendMailAttendanceRewardAsync(Int64 userId, Int64 attendancecount)
+    public async Task<ErrorCode> SendMailAttendanceRewardAsync(Int64 userId, Int64 attendanceCount)
     {
         var mailid = _idGenerator.CreateId();
 
         try
         {
-            var attendanceReward = _masterDb.AttendanceRewardInfo.Find(i => i.Code == attendancecount);
+            var checkNewAttendance = await _queryFactory.Query("User_Data").Where("UserId", userId).Select("IsReceiveAttendanceReward", "AttendanceCount").FirstOrDefaultAsync<UserData>();
+
+            if (checkNewAttendance.IsReceiveAttendanceReward == true || checkNewAttendance.AttendanceCount != attendanceCount)
+            {
+                _logger.ZLogError($"[SendMailAttendanceReward] ErrorCode: {ErrorCode.SendMailAttendanceRewardFailAlreadyAttend}, UserId: {userId}");
+                return ErrorCode.SendMailAttendanceRewardFailAlreadyAttend;
+            }
+
+            var attendanceReward = _masterDb.AttendanceRewardInfo.Find(i => i.Code == attendanceCount);
 
             await _queryFactory.Query("Mail_Data").InsertAsync(new
             {
                 MailId = mailid,
                 UserId = userId,
                 SenderId = 0,
-                Title = $"{attendancecount}일차 출석 보상 지급",
-                Content = $"{attendancecount}일차 출석 보상입니다.",
+                Title = $"{attendanceCount}일차 출석 보상 지급",
+                Content = $"{attendanceCount}일차 출석 보상입니다.",
                 hasItem = true,
                 ExpiredAt = DateTime.Now.AddDays(7)
             });
@@ -91,6 +101,9 @@ public partial class GameDb : IGameDb
                 ItemCode = attendanceReward.ItemCode,
                 ItemCount = attendanceReward.Count
             });
+
+            await _queryFactory.Query("User_Data").Where("UserId", userId)
+                               .UpdateAsync(new { IsReceiveAttendanceReward = true });
 
             return ErrorCode.None;
         }

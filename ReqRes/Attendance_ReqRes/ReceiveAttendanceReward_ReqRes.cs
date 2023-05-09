@@ -11,7 +11,7 @@ public class ReceiveAttendanceRewardRequest
     public double AppVersion { get; set; }
     public double MasterVersion { get; set; }
     public Int64 UserId { get; set; }
-    public Int64 attendanceCount { get; set; }
+    public Int64 AttendanceCount { get; set; }
 }
 
 public class ReceiveAttendanceRewardResponse

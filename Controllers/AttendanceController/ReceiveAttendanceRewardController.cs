@@ -28,7 +28,7 @@ public class ReceiveAttendanceReward : ControllerBase
         var response = new ReceiveAttendanceRewardResponse();
         response.Result = ErrorCode.None;
 
-        var errorCode = await _gameDb.SendMailAttendanceRewardAsync(request.UserId, request.attendanceCount);
+        var errorCode = await _gameDb.SendMailAttendanceRewardAsync(request.UserId, request.AttendanceCount);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

@@ -50,7 +50,8 @@
     LoadAttendanceDataFailWrongUser = 6001,
     LoadAttendanceDataFailSendMail = 6002,
     LoadAttendanceDataFailException = 6003,
-    SendMailAttendanceRewardFailException = 6004,
+    SendMailAttendanceRewardFailAlreadyAttend = 6004,
+    SendMailAttendanceRewardFailException = 6005,
 
     PurchaseInAppProductFailDuplicate = 7001,
     PurchaseInAppProductFailException = 7002,
