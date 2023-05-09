@@ -30,6 +30,8 @@
     <None Remove="DbOperations\GameDb\" />
     <None Remove="DbOperations\RedisDb\" />
     <None Remove="log\" />
+    <None Remove="Controllers\AttendanceController\" />
+    <None Remove="ReqRes\Attendance_ReqRes\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Middleware\" />
@@ -40,5 +42,7 @@
     <Folder Include="DbOperations\GameDb\" />
     <Folder Include="DbOperations\RedisDb\" />
     <Folder Include="log\" />
+    <Folder Include="Controllers\AttendanceController\" />
+    <Folder Include="ReqRes\Attendance_ReqRes\" />
   </ItemGroup>
 </Project>

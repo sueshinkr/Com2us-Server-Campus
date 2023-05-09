@@ -12,6 +12,7 @@ public interface IMasterDb
     List<InAppProduct> InAppProductInfo { get; }
     List<StageItem> StageItemInfo { get; }
     List<StageEnemy> StageEnemyInfo { get; }
+    List<ExpTable> ExpTableInfo { get; }
 
     public ErrorCode VerifyVersionDataAsync(double appVersion, double masterVersion);
 }

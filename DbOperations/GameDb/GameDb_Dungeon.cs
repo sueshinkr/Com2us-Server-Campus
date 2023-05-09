@@ -44,8 +44,8 @@ public partial class GameDb : IGameDb
                 }
             }
 
-            var stageItem = _MasterDb.StageItemInfo.FindAll(i => i.Code == stageCode).Select(i => i.ItemCode).ToList();
-            var stageEnemy = _MasterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode);
+            var stageItem = _masterDb.StageItemInfo.FindAll(i => i.Code == stageCode).Select(i => i.ItemCode).ToList();
+            var stageEnemy = _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode);
 
             return new Tuple<ErrorCode, List<Int64>, List<StageEnemy>>(ErrorCode.None, stageItem, stageEnemy);
         }
@@ -56,17 +56,18 @@ public partial class GameDb : IGameDb
         }
     }
 
-    // 던전 아이템 획득
-    // redis에 저장하고있었던 획득 목록에 따라 User_Item 테이블에 데이터 추가, ClearStage 테이블에 데이터 추가
+    // 던전 클리어 처리
+    // redis에 저장하고있었던 획득 목록에 따라 User_Item 테이블에 데이터 추가, ClearStage 테이블에 데이터 추가, User_Data 테이블 업데이트 
     public async Task<ErrorCode> GetStageClearRewardAsync(Int64 userId, Int64 stageCode, Int64 clearRank, TimeSpan clearTime, List<ObtainedStageItem> itemList)
     {
         var itemIdList = new List<Int64>();
 
         try
         {
+            // 아이템 획득 처리
             foreach (ObtainedStageItem item in itemList)
             {
-                var itemType = _MasterDb.ItemInfo.Find(i => i.Code == item.ItemCode).Attribute;
+                var itemType = _masterDb.ItemInfo.Find(i => i.Code == item.ItemCode).Attribute;
                 var errorCode = new ErrorCode();
 
                 if (itemType == 4 || itemType == 5) // 마법도구 또는 돈
@@ -100,6 +101,7 @@ public partial class GameDb : IGameDb
                 }
             }
 
+            // 클리어 정보 처리
             var beforeClearData = await _queryFactory.Query("ClearStage").Where("UserId", userId)
                                                      .Where("StageCode", stageCode).FirstOrDefaultAsync<ClearData>();
 
@@ -128,6 +130,43 @@ public partial class GameDb : IGameDb
                                    .Where("StageCode", stageCode).UpdateAsync(new { ClearTime = clearTime });
             }
 
+            // 경험치 처리
+            // 이런거 함수로 따로 빼도 될듯?
+            Int64 obtainExp = 0;
+            foreach (StageEnemy stageEnemy in _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode))
+            {
+                obtainExp += stageEnemy.Exp * stageEnemy.Count;
+            }
+
+            var userData = _queryFactory.Query("User_Data").Where("UserId", userId)
+                                        .FirstOrDefault<UserData>();
+
+            while (true)
+            {
+                var requireExp = _masterDb.ExpTableInfo.Find(i => i.Level == userData.Level).RequireExp;
+
+                if (userData.Exp + obtainExp >= requireExp)
+                {
+                    var tmpExp = userData.Exp;
+                    userData.Exp = userData.Exp + obtainExp - requireExp;
+                    obtainExp -= requireExp - tmpExp;
+
+                    userData.Level++;
+                }
+                else
+                {
+                    userData.Exp += obtainExp;
+                    break;
+                }
+            }
+
+            await _queryFactory.Query("User_Data").Where("UserId", userId)
+                               .UpdateAsync(new
+                               {
+                                   Level = userData.Level,
+                                   Exp = userData.Exp
+                               });
+            
             return ErrorCode.None;
         }
         catch (Exception ex)

@@ -69,7 +69,7 @@ public partial class GameDb : IGameDb
                 ExpiredAt = DateTime.Now.AddYears(10)
             });
 
-            foreach (InAppProduct product in _MasterDb.InAppProductInfo.FindAll(i => i.Code == purchaseCode))
+            foreach (InAppProduct product in _masterDb.InAppProductInfo.FindAll(i => i.Code == purchaseCode))
             {
                 var itemid = _idGenerator.CreateId();
 

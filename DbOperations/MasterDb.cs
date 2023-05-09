@@ -25,6 +25,7 @@ public class MasterDb : IMasterDb
     public List<InAppProduct> InAppProductInfo { get; }
     public List<StageItem> StageItemInfo { get; }
     public List<StageEnemy> StageEnemyInfo { get; }
+    public List<ExpTable> ExpTableInfo { get; }
 
     IDbConnection _dbConn;
     QueryFactory _queryFactory;
@@ -48,6 +49,7 @@ public class MasterDb : IMasterDb
         InAppProductInfo = _queryFactory.Query("InAppProduct").Select().Get<InAppProduct>() as List<InAppProduct>;
         StageItemInfo = _queryFactory.Query("StageItem").Select().Get<StageItem>() as List<StageItem>;
         StageEnemyInfo = _queryFactory.Query("StageEnemy").Select().Get<StageEnemy>() as List<StageEnemy>;
+        ExpTableInfo = _queryFactory.Query("ExpTable").Select().Get<ExpTable>() as List<ExpTable>;
 
         _logger.ZLogInformation("MasterDb Loading Completed");
 

@@ -17,7 +17,7 @@ public class Login : ControllerBase
     readonly IAccountDb _accountDb;
     readonly IRedisDb _redisDb;
     readonly IGameDb _gameDb;
-    readonly IMasterDb _MasterDb;
+    readonly IMasterDb _masterDb;
 
     public Login(ILogger<Login> logger, IAccountDb accountDb, IRedisDb redisDb, IGameDb gameDb, IMasterDb masterDb)
     {
@@ -25,7 +25,7 @@ public class Login : ControllerBase
         _accountDb = accountDb;
         _redisDb = redisDb;
         _gameDb = gameDb;
-        _MasterDb = masterDb;
+        _masterDb = masterDb;
     }
 
     [HttpPost]
@@ -43,7 +43,7 @@ public class Login : ControllerBase
         }
 
         // 버전 데이터 검증
-        errorCode = _MasterDb.VerifyVersionDataAsync(request.AppVersion, request.MasterVersion);
+        errorCode = _masterDb.VerifyVersionDataAsync(request.AppVersion, request.MasterVersion);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

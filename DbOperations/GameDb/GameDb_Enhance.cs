@@ -27,7 +27,7 @@ public partial class GameDb : IGameDb
                 return new Tuple<ErrorCode, UserItem>(ErrorCode.EnhanceItemFailWrongData, null);
             }
 
-            var enhanceData = _MasterDb.ItemInfo.Find(i => i.Code == itemData.ItemCode);
+            var enhanceData = _masterDb.ItemInfo.Find(i => i.Code == itemData.ItemCode);
 
             if (enhanceData.EnhanceMaxCount == 0)
             {

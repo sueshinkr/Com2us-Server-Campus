@@ -13,7 +13,7 @@ namespace WebAPIServer.DbOperations;
 public partial class GameDb : IGameDb
 {
     readonly ILogger<GameDb> _logger;
-    readonly IMasterDb _MasterDb;
+    readonly IMasterDb _masterDb;
     readonly IIdGenerator<long> _idGenerator;
     readonly IConfiguration _configuration;
 
@@ -23,7 +23,7 @@ public partial class GameDb : IGameDb
     public GameDb(ILogger<GameDb> logger, IMasterDb masterDb, IIdGenerator<long> idGenerator, IConfiguration configuration)
     {
         _logger = logger;
-        _MasterDb = masterDb;
+        _masterDb = masterDb;
         _idGenerator = idGenerator;
         _configuration = configuration;
 
@@ -81,7 +81,7 @@ public partial class GameDb : IGameDb
         {
             
 
-            var item = _MasterDb.ItemInfo.Find(i => i.Code == itemCode);
+            var item = _masterDb.ItemInfo.Find(i => i.Code == itemCode);
 
             if (item.Attribute == 5)
             {

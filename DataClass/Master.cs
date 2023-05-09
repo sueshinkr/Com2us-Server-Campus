@@ -54,3 +54,9 @@ public class StageEnemy
     public Int64 Count { get; }
     public Int64 Exp { get; }
 }
+
+public class ExpTable
+{
+    public Int64 Level { get; }
+    public Int64 RequireExp { get; }
+}

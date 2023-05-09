@@ -19,8 +19,8 @@ public partial class GameDb : IGameDb
 
             if (userdata == null)
             {
-                _logger.ZLogError($"[LoadAttendanceData] ErrorCode: {ErrorCode.LoadAttendanceDataFailWrongData}, UserId: {userId}");
-                return new Tuple<ErrorCode, Int64, bool>(ErrorCode.LoadAttendanceDataFailWrongData, 0, false);
+                _logger.ZLogError($"[LoadAttendanceData] ErrorCode: {ErrorCode.LoadAttendanceDataFailWrongUser}, UserId: {userId}");
+                return new Tuple<ErrorCode, Int64, bool>(ErrorCode.LoadAttendanceDataFailWrongUser, 0, false);
             }
 
             var attendanceCount = userdata.AttendanceCount;
@@ -52,21 +52,6 @@ public partial class GameDb : IGameDb
                                    });
             }
 
-            // 메일 전송
-            var errorCode = await SendMailAttendanceRewardAsync(userId, attendanceCount);
-            if (errorCode != ErrorCode.None)
-            {
-                // 롤백
-                await _queryFactory.Query("User_Data").Where("UserId", userId)
-                                   .UpdateAsync(new
-                                   {
-                                       LastAttendance = userdata.LastAttendance,
-                                       AttendanceCount = userdata.AttendanceCount
-                                   });
-
-                return new Tuple<ErrorCode, Int64, bool>(errorCode, 0, false);
-            }
-
             return new Tuple<ErrorCode, Int64, bool>(ErrorCode.None, attendanceCount, true);
         }
         catch (Exception ex)
@@ -84,7 +69,7 @@ public partial class GameDb : IGameDb
 
         try
         {
-            var day = _MasterDb.AttendanceRewardInfo.Find(i => i.Code == attendancecount);
+            var attendanceReward = _masterDb.AttendanceRewardInfo.Find(i => i.Code == attendancecount);
 
             await _queryFactory.Query("Mail_Data").InsertAsync(new
             {
@@ -103,8 +88,8 @@ public partial class GameDb : IGameDb
             {
                 ItemId = itemid,
                 MailId = mailid,
-                ItemCode = day.ItemCode,
-                ItemCount = day.Count
+                ItemCode = attendanceReward.ItemCode,
+                ItemCount = attendanceReward.Count
             });
 
             return ErrorCode.None;

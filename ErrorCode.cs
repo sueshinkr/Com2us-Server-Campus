@@ -47,7 +47,7 @@
     DeleteMailFailWrongData = 5010,
     DeleteMailFailException = 5011,
 
-    LoadAttendanceDataFailWrongData = 6001,
+    LoadAttendanceDataFailWrongUser = 6001,
     LoadAttendanceDataFailSendMail = 6002,
     LoadAttendanceDataFailException = 6003,
     SendMailAttendanceRewardFailException = 6004,

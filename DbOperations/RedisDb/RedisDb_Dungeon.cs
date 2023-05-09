@@ -25,6 +25,8 @@ public partial class RedisDb : IRedisDb
 
             if (item.HasValue == true || enemy.HasValue == true)
             {
+                await DeleteStageProgressDataAsync(userId, stageCode);
+
                 _logger.ZLogError($"[CreateStageProgressData] ErrorCode: {ErrorCode.CreateStageProgressDataFailAlreadyIn}, UserId: {userId}");
                 return ErrorCode.CreateStageProgressDataFailAlreadyIn;
             }
@@ -229,6 +231,7 @@ public partial class RedisDb : IRedisDb
                 }
             }
 
+            // 획득한 아이템 정보 가져오
             var itemRedis = new RedisString<Tuple<List<ObtainedStageItem>, Int64>>(_redisConn, stageItemKey, null);
             var itemResult = await itemRedis.GetAsync();
             var itemList = itemResult.Value.Item1;

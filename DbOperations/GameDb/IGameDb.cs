@@ -15,6 +15,7 @@ public interface IGameDb : IDisposable
     public Task<ErrorCode> DeleteMailAsync(Int64 mailid, Int64 userid);
 
     public Task<Tuple<ErrorCode, Int64, bool>> LoadAttendanceDataAsync(Int64 userid);
+    public Task<ErrorCode> SendMailAttendanceRewardAsync(Int64 userId, Int64 attendancecount);
 
     public Task<ErrorCode> PurchaseInAppProductAsync(Int64 userId, Int64 purchaseId, Int64 productCode);
 

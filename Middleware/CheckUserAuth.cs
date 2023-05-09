@@ -20,7 +20,7 @@ public class CheckUserAuth
     readonly ILogger<CheckUserAuth> _logger;
     readonly IRedisDb _redisDb;
     readonly IGameDb _gameDb;
-    readonly IMasterDb _MasterDb;
+    readonly IMasterDb _masterDb;
 
     public CheckUserAuth(RequestDelegate next, ILogger<CheckUserAuth> logger, IRedisDb redisDb, IGameDb gameDb, IMasterDb masterDb)
     {
@@ -28,7 +28,7 @@ public class CheckUserAuth
         _logger = logger;
         _redisDb = redisDb;
         _gameDb = gameDb;
-        _MasterDb = masterDb;
+        _masterDb = masterDb;
     }
 
     public async Task Invoke(HttpContext context)
@@ -69,8 +69,8 @@ public class CheckUserAuth
                 return;
             }
 
-            // 게임 데이터 확인
-            if (_MasterDb.VerifyVersionDataAsync(appVersion, masterVersion) != ErrorCode.None)
+            // 게임 버전 데이터 검증
+            if (_masterDb.VerifyVersionDataAsync(appVersion, masterVersion) != ErrorCode.None)
             {
                 await SetJsonResponse(context, ErrorCode.CheckUserGameDataNotMatch);
                 return;
