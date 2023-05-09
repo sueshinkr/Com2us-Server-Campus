@@ -10,6 +10,7 @@ public partial class GameDb : IGameDb
 {
     // 아이템 강화
     // User_Item 테이블 업데이트 및 User_Item_EnhanceHistory 테이블에 데이터 추가
+    // 함수 너무 큰데 나눠야겠지... 체크 / 성공시 / 실패시 이렇게 나눠야하나 ...
     public async Task<Tuple<ErrorCode, UserItem>> EnhanceItemAsync(Int64 userId, Int64 itemId)
     {
         UserItem itemData = new UserItem();
