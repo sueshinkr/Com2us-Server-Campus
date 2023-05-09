@@ -58,15 +58,15 @@ public partial class GameDb : IGameDb
 
     // 던전 아이템 획득
     // redis에 저장하고있었던 획득 목록에 따라 User_Item 테이블에 데이터 추가, ClearStage 테이블에 데이터 추가
-    public async Task<ErrorCode> GetStageClearRewardAsync(Int64 userId, Int64 stageCode, Int64 clearRank, TimeSpan clearTime, List<Tuple<Int64, Int64>> itemList)
+    public async Task<ErrorCode> GetStageClearRewardAsync(Int64 userId, Int64 stageCode, Int64 clearRank, TimeSpan clearTime, List<ObtainedStageItem> itemList)
     {
         var itemIdList = new List<Int64>();
 
         try
         {
-            foreach (Tuple<Int64, Int64> item in itemList)
+            foreach (ObtainedStageItem item in itemList)
             {
-                var itemType = _MasterDb.ItemInfo.Find(i => i.Code == item.Item1).Attribute;
+                var itemType = _MasterDb.ItemInfo.Find(i => i.Code == item.ItemCode).Attribute;
                 var errorCode = new ErrorCode();
 
                 if (itemType == 4 || itemType == 5) // 마법도구 또는 돈
@@ -74,16 +74,16 @@ public partial class GameDb : IGameDb
                     var itemId = _idGenerator.CreateId();
                     itemIdList.Add(itemId);
 
-                    errorCode = await InsertUserItemAsync(userId, item.Item1, item.Item2, itemId);
+                    errorCode = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, itemId);
                 }
                 else
                 {
-                    for (Int64 i = 0; i < item.Item2; i++)
+                    for (Int64 i = 0; i < item.ItemCount; i++)
                     {
                         var itemId = _idGenerator.CreateId();
                         itemIdList.Add(itemId);
 
-                        errorCode = await InsertUserItemAsync(userId, item.Item1, 1, itemId);
+                        errorCode = await InsertUserItemAsync(userId, item.ItemCode, 1, itemId);
                     }
                 }
 
@@ -115,8 +115,8 @@ public partial class GameDb : IGameDb
             }
             else if (beforeClearData.ClearRank < clearRank)
             {
-                await _queryFactory.Query("ClearStage").Where("UserId", userId).Where("StageCode", stageCode)
-                                   .UpdateAsync(new
+                await _queryFactory.Query("ClearStage").Where("UserId", userId)
+                                   .Where("StageCode", stageCode).UpdateAsync(new
                                    {
                                        ClearRank = clearRank,
                                        ClearTime = clearTime
@@ -124,8 +124,8 @@ public partial class GameDb : IGameDb
             }
             else if (beforeClearData.ClearRank == clearRank && beforeClearData.ClearTime > clearTime)
             {
-                await _queryFactory.Query("ClearStage").Where("UserId", userId).Where("StageCode", stageCode)
-                                   .UpdateAsync(new { ClearTime = clearTime });
+                await _queryFactory.Query("ClearStage").Where("UserId", userId)
+                                   .Where("StageCode", stageCode).UpdateAsync(new { ClearTime = clearTime });
             }
 
             return ErrorCode.None;

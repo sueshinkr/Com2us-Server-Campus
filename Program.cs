@@ -1,7 +1,9 @@
 using WebAPIServer.DbOperations;
 using WebAPIServer.Middleware;
+using WebAPIServer.Log;
 using ZLogger;
 using IdGen.DependencyInjection; //https://github.com/RobThree/IdGen
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +15,7 @@ builder.Services.AddIdGen(1);
 
 builder.Services.AddControllers();
 
-builder.Logging.ClearProviders();
-builder.Logging.AddZLoggerConsole();
+LogManager.SetLogging(builder);
 
 var app = builder.Build();
 

@@ -14,5 +14,5 @@ public interface IRedisDb
     public Task<ErrorCode> DeleteStageProgressDataAsync(Int64 userId, Int64 stageCode);
     public Task<ErrorCode> ObtainItemAsync(Int64 userId, Int64 stageCode, Int64 itemCode, Int64 itemCount);
     public Task<ErrorCode> KillEnemyAsync(Int64 userId, Int64 stageCode, Int64 enemyCode);
-    public Task<Tuple<ErrorCode, List<Tuple<Int64, Int64>>>> CheckStageClearAsync(Int64 userId, Int64 stageCode);
+    public Task<Tuple<ErrorCode, List<ObtainedStageItem>>> CheckStageClearAsync(Int64 userId, Int64 stageCode);
 }

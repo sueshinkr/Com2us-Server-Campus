@@ -50,8 +50,6 @@ public class CreateAccount: ControllerBase
             return response;
         }
 
-        _logger.ZLogInformation($"{request.Email} Account Created");
-
         return response;
     }
 }

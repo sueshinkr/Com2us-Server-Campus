@@ -22,6 +22,6 @@ public interface IGameDb : IDisposable
 
     public Task<Tuple<ErrorCode, List<ClearData>>> LoadStageListAsync(Int64 userId);
     public Task<Tuple<ErrorCode, List<Int64>, List<StageEnemy>>> SelectStageAsync(Int64 userId, Int64 stageCode);
-    public Task<ErrorCode> GetStageClearRewardAsync(Int64 userId, Int64 stageCode, Int64 ClearRank, TimeSpan ClearTime, List<Tuple<Int64, Int64>> itemList);
+    public Task<ErrorCode> GetStageClearRewardAsync(Int64 userId, Int64 stageCode, Int64 ClearRank, TimeSpan ClearTime, List<ObtainedStageItem> itemList);
 }
 

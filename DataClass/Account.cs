@@ -1,6 +1,5 @@
 ﻿namespace WebAPIServer.DataClass;
 
-
 public class Account
 {
     public Int64 AccountId { get; set; }

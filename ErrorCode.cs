@@ -71,17 +71,20 @@
     DeleteStageProgressDataFailRedis = 9007,
     DeleteStageProgressDataFailException = 9008,
     ObtainItemFailWrongItem = 9009,
-    ObtainItemFailWrongData = 9010,
-    ObtainItemFailRedis = 9011,
-    ObtainItemFailException = 9012,
-    KillEnemyFailWrongEnemy = 9013,
-    KillEnemyFailWrongData = 9014,
-    KillEnemyFailRedis = 9015,
-    KillEnemyFailException = 9016,
-    CheckStageClearFailWrongData = 9017,
-    CheckStageClearFailException = 9018,
-    GetStageClearRewardFailInsertItem = 9019,
-    GetStageClearRewardFailException = 9020
-
-    
+    ObtainItemFailWrongKey = 9010,
+    ObtainItemFailWrongStage = 9011,
+    ObtainItemFailRedis = 9012,
+    ObtainItemFailException = 9013,
+    KillEnemyFailWrongEnemy = 9014,
+    KillEnemyFailWrongKey = 9015,
+    KillEnemyFailWrongStage = 9016,
+    KillEnemyFailRedis = 9017,
+    KillEnemyFailException = 9018,
+    CheckStageClearFailWrongKey = 9019,
+    CheckStageClearFailWrongStage = 9020,
+    CheckStageClearFailWrongData = 9021,
+    CheckStageClearFailException = 9022,
+    GetStageClearRewardFailInsertItem = 9023,
+    GetStageClearRewardFailException = 9024
 }
+

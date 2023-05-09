@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using WebAPIServer.DataClass;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
 using ZLogger;
+
 
 namespace WebAPIServer.Middleware;
 
@@ -142,25 +144,26 @@ public class CheckUserAuth
         return true;
     }
 
-    public async Task<ErrorCode> SetJsonResponse(HttpContext context, ErrorCode errorcode)
+    public async Task<ErrorCode> SetJsonResponse(HttpContext context, ErrorCode errorCode)
     {
         try
         {
             var JsonResponse = JsonSerializer.Serialize(new CheckUserAuthResponse
             {
-                result = errorcode
+                result = errorCode
             });
 
             var bytes = Encoding.UTF8.GetBytes(JsonResponse);
             await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
 
-            _logger.ZLogError($"[CheckUserAuth] ErrorCode: {errorcode}");
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), $"[CheckUserAuth] Error");
+            //_logger.ZLogError($"[CheckUserAuth] ErrorCode: {errorCode}");
 
             return ErrorCode.None;
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[CheckUserAuth] ErrorCode: {ErrorCode.SetJsonFailException}");
+            _logger.ZLogError(LogManager.MakeEventId(ErrorCode.SetJsonFailException), ex, $"[CheckUserAuth] Error");
             return ErrorCode.SetJsonFailException;
         }
     }
