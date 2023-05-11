@@ -4,17 +4,16 @@ using WebAPIServer.DataClass;
 
 namespace WebAPIServer.RequestResponse;
 
-public class ReceiveAttendanceRewardRequest
+public class HandleNewAttendanceRequest
 {
     public Int64 AccountId { get; set; }
     public string AuthToken { get; set; }
     public double AppVersion { get; set; }
     public double MasterVersion { get; set; }
     public Int64 UserId { get; set; }
-    public Int64 AttendanceCount { get; set; }
 }
 
-public class ReceiveAttendanceRewardResponse
+public class HandleNewAttendanceResponse
 {
     public ErrorCode Result { get; set; }
 }

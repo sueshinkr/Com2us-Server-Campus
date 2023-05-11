@@ -51,14 +51,13 @@ public class Login : ControllerBase
         }
 
         // 인증키 생성
-        var authToken = Security.RandomString(25);
-        errorCode = await _redisDb.CreateUserDataAsync(request.Email, authToken, accountId);
+        response.Authtoken = Security.RandomString(25);
+        errorCode = await _redisDb.CreateUserDataAsync(request.Email, response.Authtoken, accountId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
             return response;
         }
-        response.Authtoken = authToken;
 
         // UserData 테이블 / UserItem 테이블에서 유저 정보 찾아서 클라이언트에 전달
         // 기본 데이터 로딩
@@ -69,10 +68,8 @@ public class Login : ControllerBase
             return response;
         }
 
-        var userid = response.userData.UserId;
-
         // 아이템 로딩
-        (errorCode, response.userItem) = await _gameDb.UserItemLoadingAsync(userid);
+        (errorCode, response.userItem) = await _gameDb.UserItemLoadingAsync(response.userData.UserId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
@@ -80,7 +77,7 @@ public class Login : ControllerBase
         }
 
         // 공지 읽어오기
-        (errorCode, response.notification) = await _redisDb.NotificationLoading();
+        (errorCode, response.notificationUrl) = await _redisDb.NotificationLoading();
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

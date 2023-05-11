@@ -29,7 +29,7 @@ public class ClearStage : ControllerBase
         var response = new ClearStageResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, var itemList) = await _redisDb.CheckStageClearAsync(request.UserId, request.StageCode);
+        (var errorCode, var itemList) = await _redisDb.CheckStageClearDataAsync(request.UserId, request.StageCode);
         if (errorCode != ErrorCode.None)
         {
             await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
@@ -38,9 +38,20 @@ public class ClearStage : ControllerBase
             return response;
         }
 
-        errorCode = await _gameDb.GetStageClearRewardAsync(request.UserId, request.StageCode, request.ClearRank, request.ClearTime, itemList);
+        (errorCode, response.userItem, response.ObtainExp) = await _gameDb.ReceiveStageClearRewardAsync(request.UserId, request.StageCode, itemList);
         if (errorCode != ErrorCode.None)
         {
+            await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+
+            response.Result = errorCode;
+            return response;
+        }
+
+        errorCode = await _gameDb.UpdateStageClearDataAsync(request.UserId, request.StageCode, request.ClearRank, request.ClearTime);
+        if (errorCode != ErrorCode.None)
+        {
+            await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+
             response.Result = errorCode;
             return response;
         }

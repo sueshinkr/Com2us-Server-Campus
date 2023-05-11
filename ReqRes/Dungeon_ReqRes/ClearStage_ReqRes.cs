@@ -19,4 +19,6 @@ public class ClearStageRequest
 public class ClearStageResponse
 {
     public ErrorCode Result { get; set; }
+    public List<UserItem> userItem { get; set; }
+    public Int64 ObtainExp { get; set; }
 }

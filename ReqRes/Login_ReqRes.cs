@@ -28,5 +28,5 @@ public class LoginResponse
     public string Authtoken { get; set; }
     public UserData userData { get; set; }
     public List<UserItem> userItem { get; set; }
-    public byte[] notification { get; set; }
+    public string notificationUrl { get; set; }
 }

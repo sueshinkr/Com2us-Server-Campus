@@ -198,7 +198,7 @@ public partial class RedisDb : IRedisDb
 
     // 스테이지 클리어 확인
     // MasterData의 StageEnemy 데이터와 redis에 저장해놓은 데이터 비교 
-    public async Task<Tuple<ErrorCode, List<ObtainedStageItem>>> CheckStageClearAsync(Int64 userId, Int64 stageCode)
+    public async Task<Tuple<ErrorCode, List<ObtainedStageItem>>> CheckStageClearDataAsync(Int64 userId, Int64 stageCode)
     {
         var stageItemKey = "Stage_" + userId + "_Item";
         var stageEnemyKey = "Stage_" + userId + "_Enemy";
@@ -210,14 +210,14 @@ public partial class RedisDb : IRedisDb
 
             if (enemyResult.HasValue == false)
             {
-                _logger.ZLogError($"[CheckStageClear] ErrorCode: {ErrorCode.CheckStageClearFailWrongKey}, UserId: {userId}");
-                return new Tuple<ErrorCode, List<ObtainedStageItem>>(ErrorCode.CheckStageClearFailWrongKey, null);
+                _logger.ZLogError($"[CheckStageClearData] ErrorCode: {ErrorCode.CheckStageClearDataFailWrongKey}, UserId: {userId}");
+                return new Tuple<ErrorCode, List<ObtainedStageItem>>(ErrorCode.CheckStageClearDataFailWrongKey, null);
             }
 
             if (enemyResult.Value.Item2 != stageCode)
             {
-                _logger.ZLogError($"[CheckStageClear] ErrorCode: {ErrorCode.CheckStageClearFailWrongStage}, UserId: {userId}");
-                return new Tuple<ErrorCode, List<ObtainedStageItem>>(ErrorCode.CheckStageClearFailWrongStage, null);
+                _logger.ZLogError($"[CheckStageClearData] ErrorCode: {ErrorCode.CheckStageClearDataFailWrongStage}, UserId: {userId}");
+                return new Tuple<ErrorCode, List<ObtainedStageItem>>(ErrorCode.CheckStageClearDataFailWrongStage, null);
             }
 
             var enemyList = enemyResult.Value.Item1;
@@ -226,8 +226,8 @@ public partial class RedisDb : IRedisDb
             {
                 if (enemyList.Find(i => i.EnemyCode == stageEnemy.NpcCode && i.EnemyCount == stageEnemy.Count) == null)
                 {
-                    _logger.ZLogError($"[CheckStageClear] ErrorCode: {ErrorCode.CheckStageClearFailWrongData}, UserId: {userId}");
-                    return new Tuple<ErrorCode, List<ObtainedStageItem>>(ErrorCode.CheckStageClearFailWrongData, null);
+                    _logger.ZLogError($"[CheckStageClearData] ErrorCode: {ErrorCode.CheckStageClearDataFailWrongData}, UserId: {userId}");
+                    return new Tuple<ErrorCode, List<ObtainedStageItem>>(ErrorCode.CheckStageClearDataFailWrongData, null);
                 }
             }
 
@@ -240,8 +240,8 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[CheckStageClear] ErrorCode: {ErrorCode.CheckStageClearFailException}, UserId: {userId}");
-            return new Tuple<ErrorCode, List<ObtainedStageItem>>(ErrorCode.CheckStageClearFailException, null);
+            _logger.ZLogError(ex, $"[CheckStageClearData] ErrorCode: {ErrorCode.CheckStageClearDataFailException}, UserId: {userId}");
+            return new Tuple<ErrorCode, List<ObtainedStageItem>>(ErrorCode.CheckStageClearDataFailException, null);
         }
     }
 }

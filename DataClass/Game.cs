@@ -7,10 +7,14 @@ public class UserData
     public Int64 Level { get; set; }
     public Int64 Exp { get; set; }
     public Int64 Money { get; set; }
-    public Int64 AttendanceCount { get; set; }
-    public bool IsReceiveAttendanceReward { get; set; }
+    public bool IsHandleNewAttendance { get; set; }
     public Int64 ClearStage { get; set; }
     public DateTime LastLogin { get; set; }
+}
+
+public class UserAttendance
+{
+    public Int64 AttendanceCount { get; set; }
     public DateTime LastAttendance { get; set; }
 }
 

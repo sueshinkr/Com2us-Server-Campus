@@ -49,14 +49,18 @@ public partial class GameDb : IGameDb
             var userId = await _queryFactory.Query("User_Data")
                                             .InsertGetIdAsync<Int64>(new { accountId = accountId });
 
+            await _queryFactory.Query("User_Attendance")
+                               .InsertAsync(new { UserId = userId });
+
             List<(Int64, Int64)> defaultitem = new List<(Int64, Int64)> { (2, 1), (4, 1), (5, 1), (6, 100) };
             foreach ((Int64 itemCode, Int64 count) in defaultitem)
             {
-                var errorCode = await InsertUserItemAsync(userId, itemCode, count);
+                (var errorCode, var useritem) = await InsertUserItemAsync(userId, itemCode, count);
                 if (errorCode != ErrorCode.None)
                 {
                     // 롤백
                     await _queryFactory.Query("User_Data").Where("UserId", userId).DeleteAsync();
+                    await _queryFactory.Query("User_Attendance").Where("UserId", userId).DeleteAsync();
                     await _queryFactory.Query("User_Item").Where("UserId", userId).DeleteAsync();
 
                     _logger.ZLogError($"[CreateBasicDataAsync] ErrorCode: {ErrorCode.CreateBasicDataFailInsertItem}, accountId: {accountId}");
@@ -75,20 +79,18 @@ public partial class GameDb : IGameDb
 
     // 유저 데이터에 아이템 추가
     // User_Item 테이블에 아이템 추가
-    private async Task<ErrorCode> InsertUserItemAsync(Int64 userId, Int64 itemCode, Int64 count, Int64 itemId = 0)
+    private async Task<Tuple<ErrorCode, UserItem>> InsertUserItemAsync(Int64 userId, Int64 itemCode, Int64 itemCount, Int64 itemId = 0)
     {
+        var userItem = new UserItem();
+
         try
         {
-            
+            var itemData = _masterDb.ItemInfo.Find(i => i.Code == itemCode);
 
-            var item = _masterDb.ItemInfo.Find(i => i.Code == itemCode);
-
-            if (item.Attribute == 5)
+            if (itemData.Attribute == 5)
             {
                 await _queryFactory.Query("User_Data").Where("UserId", userId)
-                                   .IncrementAsync("Money", (int)count);
-
-                return ErrorCode.None;
+                                   .IncrementAsync("Money", (int)itemCount);
             }
             else
             {
@@ -102,30 +104,43 @@ public partial class GameDb : IGameDb
                     ItemId = itemId,
                     UserId = userId,
                     ItemCode = itemCode,
-                    ItemCount = count,
-                    Attack = item.Attack,
-                    Defence = item.Defence,
-                    Magic = item.Magic
+                    ItemCount = itemCount,
+                    Attack = itemData.Attack,
+                    Defence = itemData.Defence,
+                    Magic = itemData.Magic
                 });
             }
 
-            return ErrorCode.None;
+            userItem.ItemCode = itemCode;
+            userItem.ItemCode = itemCount;
+
+            return new Tuple<ErrorCode, UserItem>(ErrorCode.None, userItem);
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex, $"[InsertUserItem] ErrorCode: {ErrorCode.InsertItemFailException}, UserId: {userId}, ItemCode: {itemCode}");
-            return ErrorCode.InsertItemFailException;
+            return new Tuple<ErrorCode, UserItem>(ErrorCode.InsertItemFailException, userItem);
         }
     }
 
     // 유저 데이터에서 아이템 제거
     // User_Item 테이블에서 아이템 제거
-    private async Task<ErrorCode> DeleteUserItemAsync(Int64 userId, Int64 itemId)
+    private async Task<ErrorCode> DeleteUserItemAsync(Int64 userId, Int64 itemId, Int64 itemCount = 0)
     {
         try
         {
-            var isDeleted = await _queryFactory.Query("User_Item").Where("UserId", userId)
+            Int64 isDeleted;
+
+            if (itemId == 0)
+            {
+                isDeleted = await _queryFactory.Query("User_Data").Where("UserId", userId)
+                                               .DecrementAsync("Money", (int)itemCount);
+            }
+            else
+            {
+                isDeleted = await _queryFactory.Query("User_Item").Where("UserId", userId)
                                                .Where("ItemId", itemId).DeleteAsync();
+            }
 
             if (isDeleted == 0)
             {
@@ -146,15 +161,17 @@ public partial class GameDb : IGameDb
     // User_Data 테이블에서 유저 기본 정보 가져오기
     public async Task<Tuple<ErrorCode, UserData>> UserDataLoading(Int64 accountId)
     {
+        var userData = new UserData();
+
         try
         {
-            var userData = await _queryFactory.Query("User_Data").Where("accountId", accountId).FirstOrDefaultAsync<UserData>();
+            userData = await _queryFactory.Query("User_Data").Where("accountId", accountId).FirstOrDefaultAsync<UserData>();
             return new Tuple<ErrorCode, UserData>(ErrorCode.None, userData);
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex, $"[DataLoading] ErrorCode: {ErrorCode.UserDataLoadingFailException}, accountId: {accountId}");
-            return new Tuple<ErrorCode, UserData>(ErrorCode.UserDataLoadingFailException, null);
+            return new Tuple<ErrorCode, UserData>(ErrorCode.UserDataLoadingFailException, userData);
         }
     }
 
@@ -174,7 +191,7 @@ public partial class GameDb : IGameDb
         catch (Exception ex)
         {
             _logger.ZLogError(ex, $"[UserItemLoadingAsync] ErrorCode: {ErrorCode.UserItemLoadingFailException}, UserId: {userId}");
-            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.UserItemLoadingFailException, null);
+            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.UserItemLoadingFailException, userItem);
         }
     } 
 }

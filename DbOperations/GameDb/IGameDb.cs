@@ -15,7 +15,7 @@ public interface IGameDb : IDisposable
     public Task<ErrorCode> DeleteMailAsync(Int64 mailid, Int64 userid);
 
     public Task<Tuple<ErrorCode, Int64, bool>> LoadAttendanceDataAsync(Int64 userid);
-    public Task<ErrorCode> SendMailAttendanceRewardAsync(Int64 userId, Int64 attendancecount);
+    public Task<ErrorCode> HandleNewAttendanceAsync(Int64 userId);
 
     public Task<ErrorCode> PurchaseInAppProductAsync(Int64 userId, Int64 purchaseId, Int64 productCode);
 
@@ -23,6 +23,7 @@ public interface IGameDb : IDisposable
 
     public Task<Tuple<ErrorCode, List<ClearData>>> LoadStageListAsync(Int64 userId);
     public Task<Tuple<ErrorCode, List<Int64>, List<StageEnemy>>> SelectStageAsync(Int64 userId, Int64 stageCode);
-    public Task<ErrorCode> GetStageClearRewardAsync(Int64 userId, Int64 stageCode, Int64 ClearRank, TimeSpan ClearTime, List<ObtainedStageItem> itemList);
+    public Task<Tuple<ErrorCode, List<UserItem>, Int64>> ReceiveStageClearRewardAsync(Int64 userId, Int64 stageCode, List<ObtainedStageItem> itemList);
+    public Task<ErrorCode> UpdateStageClearDataAsync(Int64 userId, Int64 stageCode, Int64 clearRank, TimeSpan clearTime);
 }
 

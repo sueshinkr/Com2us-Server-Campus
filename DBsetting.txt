@@ -175,11 +175,16 @@ CREATE TABLE IF NOT EXISTS GameDb.`User_Data`
     Level SMALLINT NOT NULL DEFAULT 1 COMMENT '레벨',
     Exp BIGINT NOT NULL DEFAULT 0 COMMENT '경험치',
     Money BIGINT NOT NULL DEFAULT 0 COMMENT '보유 재화',
-    AttendanceCount TINYINT NOT NULL DEFAULT 0 COMMENT '출석 횟수',
-    IsReceiveAttendanceReward BOOLEAN NOT NULL DEFAULT FALSE COMMENT '출석 보상 수령 여부',
-    LastLogin DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '마지막 로그인 일시',
-    LastAttendance DATETIME NOT NULL DEFAULT '0001-01-01 00:00:00' COMMENT '마지막 출석 일시'
+    LastLogin DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '마지막 로그인 일시'
 ) COMMENT '유저 기본 정보';
+
+DROP TABLE IF EXISTS GameDb.`User_Attendance`;
+CREATE TABLE IF NOT EXISTS GameDb.`User_Attendance`
+(
+    UserId BIGINT NOT NULL PRIMARY KEY COMMENT '유저번호',
+    AttendanceCount TINYINT NOT NULL DEFAULT 0 COMMENT '출석 횟수',
+    LastAttendance DATETIME NOT NULL DEFAULT '0001-01-01 00:00:00' COMMENT '마지막 출석 일시'
+) COMMENT '유저 출석 정보';
 
 
 
@@ -197,16 +202,6 @@ CREATE TABLE IF NOT EXISTS GameDb.`User_Item`
     IsDestroyed BOOLEAN NOT NULL DEFAULT FALSE,
     ObtainedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '획득 일시'
 ) COMMENT '유저 아이템 정보';
-
-DROP TABLE IF EXISTS GameDb.`User_Item_EnhanceHistory`;
-CREATE TABLE IF NOT EXISTS GameDb.`User_Item_EnhanceHistory`
-(
-    ItemId BIGINT NOT NULL COMMENT '아이템 고유 ID',
-    EnhancedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '강화 일시',
-    IsSuccess BOOLEAN NOT NULL COMMENT '강화 성공 여부',
-    EnhanceCount_Before TINYINT NOT NULL COMMENT '강화 전 수치',
-    PRIMARY KEY (ItemId, EnhancedAt)
-) COMMENT '강화 이력 정보';
 
 
     

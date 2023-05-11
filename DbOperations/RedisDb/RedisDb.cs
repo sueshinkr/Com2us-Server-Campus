@@ -43,8 +43,8 @@ public partial class RedisDb : IRedisDb
             var redis = new RedisString<AuthUser>(_redisConn, uid, LoginTimeSpan());
             if (await redis.SetAsync(user, LoginTimeSpan()) == false)
             {
-                _logger.ZLogError($"[CreateUserData] ErrorCode: {ErrorCode.LoginFailCreateUserData}, Email: {email}");
-                return ErrorCode.LoginFailCreateUserData;
+                _logger.ZLogError($"[CreateUserData] ErrorCode: {ErrorCode.CreateUserDataFailRedis}, Email: {email}");
+                return ErrorCode.CreateUserDataFailRedis;
             }
 
             return ErrorCode.None;
@@ -122,37 +122,28 @@ public partial class RedisDb : IRedisDb
 
     // 공지 가져오기
     // 이게 맞을까...?
-    public async Task<Tuple<ErrorCode, byte[]>> NotificationLoading()
+    public async Task<Tuple<ErrorCode, string>> NotificationLoading()
     {
+        var notificationUrl = new string("");
+
         try
         {
             var redis = new RedisString<string>(_redisConn, "notification", null);
-            var notificationUrl = await redis.GetAsync();
-            if (notificationUrl.Value == null)
+            var redisResult = await redis.GetAsync();
+            notificationUrl = redisResult.Value;
+
+            if (notificationUrl == null)
             {
                 _logger.ZLogError($"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailNoUrl}");
-                return new Tuple<ErrorCode, byte[]>(ErrorCode.NotificationLoadingFailNoUrl, null);
+                return new Tuple<ErrorCode, string>(ErrorCode.NotificationLoadingFailNoUrl, notificationUrl);
             }
 
-            using (var httpClient = new HttpClient())
-            {
-                var response = await httpClient.GetAsync(notificationUrl.Value);
-                if (response.IsSuccessStatusCode)
-                {
-                    var imageBytes = await response.Content.ReadAsByteArrayAsync();
-                    return new Tuple<ErrorCode, byte[]>(ErrorCode.None, imageBytes);
-                }
-                else
-                {
-                    _logger.ZLogError($"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailGetImageFromUrl}");
-                    return new Tuple<ErrorCode, byte[]>(ErrorCode.NotificationLoadingFailGetImageFromUrl, null);
-                }
-            }
+            return new Tuple<ErrorCode, string>(ErrorCode.None, notificationUrl);
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex, $"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailException}");
-            return new Tuple<ErrorCode, byte[]>(ErrorCode.NotificationLoadingFailException, null);
+            return new Tuple<ErrorCode, string>(ErrorCode.NotificationLoadingFailException, notificationUrl);
         }
     }
 

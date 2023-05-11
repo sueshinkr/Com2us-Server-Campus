@@ -57,14 +57,43 @@ public partial class GameDb : IGameDb
     }
 
     // 던전 클리어 처리
-    // redis에 저장하고있었던 획득 목록에 따라 User_Item 테이블에 데이터 추가, ClearStage 테이블에 데이터 추가, User_Data 테이블 업데이트 
-    public async Task<ErrorCode> GetStageClearRewardAsync(Int64 userId, Int64 stageCode, Int64 clearRank, TimeSpan clearTime, List<ObtainedStageItem> itemList)
+    // redis에 저장하고있었던 획득 목록에 따라 User_Item 테이블에 데이터 추가, User_Data 테이블 업데이트
+    public async Task<Tuple<ErrorCode, List<UserItem>, Int64>> ReceiveStageClearRewardAsync(Int64 userId, Int64 stageCode, List<ObtainedStageItem> itemList)
     {
-        var itemIdList = new List<Int64>();
+        var userItem = new List<UserItem>();
+        Int64 obtainExp = 0;
 
         try
         {
-            // 아이템 획득 처리
+            (var errorCode, userItem) = await ReceiveItemReward(userId, itemList);
+            if (errorCode != ErrorCode.None)
+            {
+                return new Tuple<ErrorCode, List<UserItem>, Int64>(errorCode, userItem, obtainExp);
+            }
+
+            (errorCode, obtainExp) = await ReceiveExpReward(userId, stageCode);
+            if (errorCode != ErrorCode.None)
+            {
+                return new Tuple<ErrorCode, List<UserItem>, Int64>(errorCode, userItem, obtainExp);
+            }
+
+            return new Tuple<ErrorCode, List<UserItem>, Int64>(ErrorCode.None, userItem, obtainExp);
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, $"[ReceiveStageClearReward] ErrorCode: {ErrorCode.ReceiveStageClearRewardFailException}, UserId: {userId}");
+            return new Tuple<ErrorCode, List<UserItem>, Int64>(ErrorCode.ReceiveStageClearRewardFailException, userItem, obtainExp);
+        }
+    }
+
+    // 아이템 획득 처리
+    // User_Item 테이블에 데이터 추가
+    private async Task<Tuple<ErrorCode, List<UserItem>>> ReceiveItemReward(Int64 userId, List<ObtainedStageItem> itemList)
+    {
+        var userItem = new List<UserItem>();
+
+        try
+        {
             foreach (ObtainedStageItem item in itemList)
             {
                 var itemType = _masterDb.ItemInfo.Find(i => i.Code == item.ItemCode).Attribute;
@@ -73,36 +102,126 @@ public partial class GameDb : IGameDb
                 if (itemType == 4 || itemType == 5) // 마법도구 또는 돈
                 {
                     var itemId = _idGenerator.CreateId();
-                    itemIdList.Add(itemId);
 
-                    errorCode = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, itemId);
+                    (errorCode, var newItem) = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, itemId);
+                    userItem.Add(newItem);
                 }
                 else
                 {
                     for (Int64 i = 0; i < item.ItemCount; i++)
                     {
                         var itemId = _idGenerator.CreateId();
-                        itemIdList.Add(itemId);
 
-                        errorCode = await InsertUserItemAsync(userId, item.ItemCode, 1, itemId);
+                        (errorCode, var newItem) = await InsertUserItemAsync(userId, item.ItemCode, 1, itemId);
+                        if (errorCode != ErrorCode.None)
+                        {
+                            break;
+                        }
+
+                        userItem.Add(newItem);
                     }
                 }
 
                 if (errorCode != ErrorCode.None)
                 {
                     // 롤백
-                    for (int i = 0; i <= itemIdList.Count; i++)
+                    for (int i = 0; i <= userItem.Count; i++)
                     {
-                        await DeleteUserItemAsync(userId, itemIdList[i]);
+                        await DeleteUserItemAsync(userId, userItem[i].ItemId, userItem[i].ItemCount);
                     }
 
-                    _logger.ZLogError($"[GetStageClearReward] ErrorCode: {ErrorCode.GetStageClearRewardFailInsertItem}, UserId: {userId}");
-                    return ErrorCode.GetStageClearRewardFailInsertItem;
+                    _logger.ZLogError($"[ReceiveItemReward] ErrorCode: {ErrorCode.ReceiveItemRewardFailInsertItem}, UserId: {userId}");
+                    return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.ReceiveItemRewardFailInsertItem, new List<UserItem>());
                 }
             }
 
-            // 클리어 정보 처리
-            var beforeClearData = await _queryFactory.Query("ClearStage").Where("UserId", userId)
+            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.None, userItem);
+        }
+        catch (Exception ex)
+        {
+            // 롤백
+            for (int i = 0; i <= userItem.Count; i++)
+            {
+                await DeleteUserItemAsync(userId, userItem[i].ItemId, userItem[i].ItemCount);
+            }
+
+            _logger.ZLogError(ex, $"[ReceiveItemReward] ErrorCode: {ErrorCode.ReceiveItemRewardFailException}, UserId: {userId}");
+            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.ReceiveItemRewardFailException, new List<UserItem>());
+        }
+    }
+
+    // 경험치 획득 처리
+    // User_Data 테이블 업데이트
+    private async Task<Tuple<ErrorCode, Int64>> ReceiveExpReward(Int64 userId, Int64 stageCode)
+    {
+        Int64 totalObtainExp = 0;
+        var userData = new UserData();
+
+        try
+        {
+            foreach (StageEnemy stageEnemy in _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode))
+            {
+                totalObtainExp += stageEnemy.Exp * stageEnemy.Count;
+            }
+
+            userData = _queryFactory.Query("User_Data").Where("UserId", userId)
+                                        .FirstOrDefault<UserData>();
+            var obtainExp = totalObtainExp;
+            var currentExp = userData.Exp;
+            var currentLevel = userData.Level;
+
+            while (true)
+            {
+                var requireExp = _masterDb.ExpTableInfo.Find(i => i.Level == currentLevel).RequireExp;
+
+                if (currentExp + obtainExp >= requireExp)
+                {
+                    var tmpExp = currentExp;
+                    currentExp = currentExp + obtainExp - requireExp;
+                    obtainExp -= requireExp - tmpExp;
+
+                    currentLevel++;
+                }
+                else
+                {
+                    currentExp += obtainExp;
+                    break;
+                }
+            }
+
+            await _queryFactory.Query("User_Data").Where("UserId", userId)
+                               .UpdateAsync(new
+                               {
+                                   Level = currentLevel,
+                                   Exp = currentExp
+                               });
+
+            return new Tuple<ErrorCode, Int64>(ErrorCode.None, totalObtainExp);
+        }
+        catch (Exception ex)
+        {
+            //롤백
+            await _queryFactory.Query("User_Data").Where("UserId", userId)
+                               .UpdateAsync(new
+                               {
+                                   Level = userData.Level,
+                                   Exp = userData.Exp
+                               });
+
+            _logger.ZLogError(ex, $"[ReceiveExpReward] ErrorCode: {ErrorCode.ReceiveExpRewardFailException}, UserId: {userId}");
+            return new Tuple<ErrorCode, Int64>(ErrorCode.ReceiveExpRewardFailException, 0);
+        }
+    }
+    
+    // 클리어 정보 처리
+    // ClearStage 테이블에 데이터 추가 또는 업데이트 
+    public async Task<ErrorCode> UpdateStageClearDataAsync(Int64 userId, Int64 stageCode, Int64 clearRank, TimeSpan clearTime)
+    {
+        var beforeClearData = new ClearData();
+
+        try
+        {
+            beforeClearData = await _queryFactory.Query("ClearStage").Where("UserId", userId)
                                                      .Where("StageCode", stageCode).FirstOrDefaultAsync<ClearData>();
 
             if (beforeClearData == null)
@@ -130,49 +249,30 @@ public partial class GameDb : IGameDb
                                    .Where("StageCode", stageCode).UpdateAsync(new { ClearTime = clearTime });
             }
 
-            // 경험치 처리
-            // 이런거 함수로 따로 빼도 될듯?
-            Int64 obtainExp = 0;
-            foreach (StageEnemy stageEnemy in _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode))
-            {
-                obtainExp += stageEnemy.Exp * stageEnemy.Count;
-            }
-
-            var userData = _queryFactory.Query("User_Data").Where("UserId", userId)
-                                        .FirstOrDefault<UserData>();
-
-            while (true)
-            {
-                var requireExp = _masterDb.ExpTableInfo.Find(i => i.Level == userData.Level).RequireExp;
-
-                if (userData.Exp + obtainExp >= requireExp)
-                {
-                    var tmpExp = userData.Exp;
-                    userData.Exp = userData.Exp + obtainExp - requireExp;
-                    obtainExp -= requireExp - tmpExp;
-
-                    userData.Level++;
-                }
-                else
-                {
-                    userData.Exp += obtainExp;
-                    break;
-                }
-            }
-
-            await _queryFactory.Query("User_Data").Where("UserId", userId)
-                               .UpdateAsync(new
-                               {
-                                   Level = userData.Level,
-                                   Exp = userData.Exp
-                               });
-            
             return ErrorCode.None;
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[GetStageClearReward] ErrorCode: {ErrorCode.GetStageClearRewardFailException}, UserId: {userId}");
-            return ErrorCode.GetStageClearRewardFailException;
+            // 롤백
+            if (beforeClearData == null)
+            {
+                await _queryFactory.Query("ClearStage").Where("UserId", userId)
+                                   .Where("StageCode", stageCode).DeleteAsync();
+            }
+            else
+            {
+                await _queryFactory.Query("ClearStage").Where("UserId", userId)
+                                   .Where("StageCode", stageCode).UpdateAsync(new
+                                   {
+                                       ClearRank = beforeClearData.ClearRank,
+                                       ClearTime = beforeClearData.ClearTime
+                                   });
+            }
+
+            _logger.ZLogError(ex, $"[UpdateStageClearData] ErrorCode: {ErrorCode.UpdateStageClearDataFailException}, UserId: {userId}");
+            return ErrorCode.UpdateStageClearDataFailException;
         }
     }
+
+    
 }

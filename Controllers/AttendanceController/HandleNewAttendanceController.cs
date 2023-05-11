@@ -9,13 +9,13 @@ namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ReceiveAttendanceReward : ControllerBase
+public class HandleNewAttendance : ControllerBase
 {
     readonly ILogger<Login> _logger;
     readonly IGameDb _gameDb;
     readonly IMasterDb _masterDb;
 
-    public ReceiveAttendanceReward(ILogger<Login> logger, IGameDb gameDb, IMasterDb masterDb)
+    public HandleNewAttendance(ILogger<Login> logger, IGameDb gameDb, IMasterDb masterDb)
     {
         _logger = logger;
         _gameDb = gameDb;
@@ -23,12 +23,12 @@ public class ReceiveAttendanceReward : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ReceiveAttendanceRewardResponse> Post(ReceiveAttendanceRewardRequest request)
+    public async Task<HandleNewAttendanceResponse> Post(HandleNewAttendanceRequest request)
     {
-        var response = new ReceiveAttendanceRewardResponse();
+        var response = new HandleNewAttendanceResponse();
         response.Result = ErrorCode.None;
 
-        var errorCode = await _gameDb.SendMailAttendanceRewardAsync(request.UserId, request.AttendanceCount);
+        var errorCode = await _gameDb.HandleNewAttendanceAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;

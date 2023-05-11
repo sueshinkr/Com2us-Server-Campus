@@ -405,3 +405,7 @@ ASALocalRun/
 .localhistory/
 
 *.json
+.bin/
+.vs/
+.obj/
+*.csproj
