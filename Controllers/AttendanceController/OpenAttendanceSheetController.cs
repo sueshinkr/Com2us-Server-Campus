@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
+using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
 using ZLogger;
@@ -29,8 +30,11 @@ public class OpenAttendanceSheet : ControllerBase
         response.Result = ErrorCode.None;
 
         (var errorCode, response.attendanceCount, response.IsNewAttendance) = await _gameDb.LoadAttendanceDataAsync(request.UserId);
+
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "OpenAttendanceSheet Error");
+
             response.Result = errorCode;
             return response;
         }

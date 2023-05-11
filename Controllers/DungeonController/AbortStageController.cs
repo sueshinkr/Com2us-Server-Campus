@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
+using ZLogger;
 
 namespace WebAPIServer.Controllers;
 
@@ -32,6 +34,8 @@ public class AbortStage : ControllerBase
         var errorCode = await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode }, "AbortStage Error");
+
             response.Result = errorCode;
             return response;
         }

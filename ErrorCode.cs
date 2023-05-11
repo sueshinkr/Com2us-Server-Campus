@@ -17,9 +17,9 @@
     VerifyVersionDataFailException = 2006,
     CreateUserDataFailRedis = 2007,
     CreateUserDataFailException = 2008,
-    NotificationLoadingFailNoUrl = 2009,
-    NotificationLoadingFailGetImageFromUrl = 2010,
-    NotificationLoadingFailException = 2011,
+    LoadNotificationFailNoUrl = 2009,
+    LoadNotificationFailGetImageFromUrl = 2010,
+    LoadNotificationFailException = 2011,
 
     InsertItemFailException = 3001,
     DeleteItemFailException = 3002,

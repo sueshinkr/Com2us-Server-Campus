@@ -21,7 +21,8 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[LoadStageList] ErrorCode: {ErrorCode.LoadLoadStageListFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "LoadStageList Exception");
+
             return new Tuple<ErrorCode, List<ClearData>>(ErrorCode.LoadLoadStageListFailException, null);
         }
     }
@@ -39,7 +40,6 @@ public partial class GameDb : IGameDb
 
                 if (hasQualified == false)
                 {
-                    _logger.ZLogError($"[SelectStage] ErrorCode: {ErrorCode.SelectStageFailNotQualified}, UserId: {userId}, StageNum : {stageCode}");
                     return new Tuple<ErrorCode, List<Int64>, List<StageEnemy>>(ErrorCode.SelectStageFailNotQualified, null, null);
                 }
             }
@@ -51,50 +51,52 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[SelectStage] ErrorCode: {ErrorCode.SelectStageFailException}, UserId: {userId}, StageNum : {stageCode}");
+            _logger.ZLogError(ex, "SelectStage Exception");
+            
             return new Tuple<ErrorCode, List<Int64>, List<StageEnemy>>(ErrorCode.SelectStageFailException, null, null);
         }
     }
 
     // 던전 클리어 처리
     // redis에 저장하고있었던 획득 목록에 따라 User_Item 테이블에 데이터 추가, User_Data 테이블 업데이트
-    public async Task<Tuple<ErrorCode, List<UserItem>, Int64>> ReceiveStageClearRewardAsync(Int64 userId, Int64 stageCode, List<ObtainedStageItem> itemList)
+    public async Task<Tuple<ErrorCode, List<ItemInfo>, Int64>> ReceiveStageClearRewardAsync(Int64 userId, Int64 stageCode, List<ItemInfo> itemList)
     {
-        var userItem = new List<UserItem>();
+        var itemInfo = new List<ItemInfo>();
         Int64 obtainExp = 0;
 
         try
         {
-            (var errorCode, userItem) = await ReceiveItemReward(userId, itemList);
+            (var errorCode, itemInfo) = await ReceiveItemReward(userId, itemList);
             if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, List<UserItem>, Int64>(errorCode, userItem, obtainExp);
+                return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, itemInfo, obtainExp);
             }
 
             (errorCode, obtainExp) = await ReceiveExpReward(userId, stageCode);
             if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, List<UserItem>, Int64>(errorCode, userItem, obtainExp);
+                return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, itemInfo, obtainExp);
             }
 
-            return new Tuple<ErrorCode, List<UserItem>, Int64>(ErrorCode.None, userItem, obtainExp);
+            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.None, itemInfo, obtainExp);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[ReceiveStageClearReward] ErrorCode: {ErrorCode.ReceiveStageClearRewardFailException}, UserId: {userId}");
-            return new Tuple<ErrorCode, List<UserItem>, Int64>(ErrorCode.ReceiveStageClearRewardFailException, userItem, obtainExp);
+            _logger.ZLogError(ex, "ReceiveStageClearReward Exception");
+
+            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.ReceiveStageClearRewardFailException, itemInfo, obtainExp);
         }
     }
 
     // 아이템 획득 처리
     // User_Item 테이블에 데이터 추가
-    private async Task<Tuple<ErrorCode, List<UserItem>>> ReceiveItemReward(Int64 userId, List<ObtainedStageItem> itemList)
+    private async Task<Tuple<ErrorCode, List<ItemInfo>>> ReceiveItemReward(Int64 userId, List<ItemInfo> itemList)
     {
-        var userItem = new List<UserItem>();
+        var itemInfo = new List<ItemInfo>();
 
         try
         {
-            foreach (ObtainedStageItem item in itemList)
+            foreach (ItemInfo item in itemList)
             {
                 var itemType = _masterDb.ItemInfo.Find(i => i.Code == item.ItemCode).Attribute;
                 var errorCode = new ErrorCode();
@@ -104,7 +106,7 @@ public partial class GameDb : IGameDb
                     var itemId = _idGenerator.CreateId();
 
                     (errorCode, var newItem) = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, itemId);
-                    userItem.Add(newItem);
+                    itemInfo.Add(newItem);
                 }
                 else
                 {
@@ -118,35 +120,35 @@ public partial class GameDb : IGameDb
                             break;
                         }
 
-                        userItem.Add(newItem);
+                        itemInfo.Add(newItem);
                     }
                 }
 
                 if (errorCode != ErrorCode.None)
                 {
                     // 롤백
-                    for (int i = 0; i <= userItem.Count; i++)
+                    for (int i = 0; i <= itemInfo.Count; i++)
                     {
-                        await DeleteUserItemAsync(userId, userItem[i].ItemId, userItem[i].ItemCount);
+                        await DeleteUserItemAsync(userId, itemInfo[i].ItemId, itemInfo[i].ItemCount);
                     }
 
-                    _logger.ZLogError($"[ReceiveItemReward] ErrorCode: {ErrorCode.ReceiveItemRewardFailInsertItem}, UserId: {userId}");
-                    return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.ReceiveItemRewardFailInsertItem, new List<UserItem>());
+                    return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveItemRewardFailInsertItem, null);
                 }
             }
 
-            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.None, userItem);
+            return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.None, itemInfo);
         }
         catch (Exception ex)
         {
             // 롤백
-            for (int i = 0; i <= userItem.Count; i++)
+            for (int i = 0; i <= itemInfo.Count; i++)
             {
-                await DeleteUserItemAsync(userId, userItem[i].ItemId, userItem[i].ItemCount);
+                await DeleteUserItemAsync(userId, itemInfo[i].ItemId, itemInfo[i].ItemCount);
             }
 
-            _logger.ZLogError(ex, $"[ReceiveItemReward] ErrorCode: {ErrorCode.ReceiveItemRewardFailException}, UserId: {userId}");
-            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.ReceiveItemRewardFailException, new List<UserItem>());
+            _logger.ZLogError(ex, "ReceiveItemReward Exception");
+
+            return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveItemRewardFailException, null);
         }
     }
 
@@ -154,37 +156,34 @@ public partial class GameDb : IGameDb
     // User_Data 테이블 업데이트
     private async Task<Tuple<ErrorCode, Int64>> ReceiveExpReward(Int64 userId, Int64 stageCode)
     {
-        Int64 totalObtainExp = 0;
+        Int64 obtainExp = 0;
         var userData = new UserData();
 
         try
         {
             foreach (StageEnemy stageEnemy in _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode))
             {
-                totalObtainExp += stageEnemy.Exp * stageEnemy.Count;
+                obtainExp += stageEnemy.Exp * stageEnemy.Count;
             }
 
             userData = _queryFactory.Query("User_Data").Where("UserId", userId)
                                         .FirstOrDefault<UserData>();
-            var obtainExp = totalObtainExp;
-            var currentExp = userData.Exp;
+
+            var currentExp = userData.Exp + obtainExp;
             var currentLevel = userData.Level;
 
             while (true)
             {
                 var requireExp = _masterDb.ExpTableInfo.Find(i => i.Level == currentLevel).RequireExp;
 
-                if (currentExp + obtainExp >= requireExp)
+                if (currentExp >= requireExp)
                 {
-                    var tmpExp = currentExp;
-                    currentExp = currentExp + obtainExp - requireExp;
-                    obtainExp -= requireExp - tmpExp;
+                    currentExp -= requireExp;
 
                     currentLevel++;
                 }
                 else
                 {
-                    currentExp += obtainExp;
                     break;
                 }
             }
@@ -196,7 +195,7 @@ public partial class GameDb : IGameDb
                                    Exp = currentExp
                                });
 
-            return new Tuple<ErrorCode, Int64>(ErrorCode.None, totalObtainExp);
+            return new Tuple<ErrorCode, Int64>(ErrorCode.None, obtainExp);
         }
         catch (Exception ex)
         {
@@ -208,7 +207,8 @@ public partial class GameDb : IGameDb
                                    Exp = userData.Exp
                                });
 
-            _logger.ZLogError(ex, $"[ReceiveExpReward] ErrorCode: {ErrorCode.ReceiveExpRewardFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "ReceiveExpReward Exception");
+
             return new Tuple<ErrorCode, Int64>(ErrorCode.ReceiveExpRewardFailException, 0);
         }
     }
@@ -269,7 +269,8 @@ public partial class GameDb : IGameDb
                                    });
             }
 
-            _logger.ZLogError(ex, $"[UpdateStageClearData] ErrorCode: {ErrorCode.UpdateStageClearDataFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "UpdateStageClearData Exception");
+            
             return ErrorCode.UpdateStageClearDataFailException;
         }
     }

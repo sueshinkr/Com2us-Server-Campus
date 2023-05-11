@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
+using ZLogger;
 
 namespace WebAPIServer.Controllers;
 
@@ -30,6 +32,8 @@ public class ObtainItem : ControllerBase
         var errorCode = await _redisDb.ObtainItemAsync(request.UserId, request.StageCode, request.ItemCode, request.ItemCount);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode, ItemCode = request.ItemCode, ItemCount = request.ItemCount }, "ObtainItem Error");
+
             await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
 
             response.Result = errorCode;

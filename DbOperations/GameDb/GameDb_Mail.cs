@@ -2,6 +2,7 @@
 using SqlKata.Execution;
 using WebAPIServer.DataClass;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
 using ZLogger;
 
 namespace WebAPIServer.DbOperations;
@@ -18,7 +19,6 @@ public partial class GameDb : IGameDb
 
         if (pageNumber < 1)
         {
-            _logger.ZLogError($"[LoadMailData] ErrorCode: {ErrorCode.LoadMailDataFailWrongPage}, UserId: {userId}, pageNumber: {pageNumber}");
             return new Tuple<ErrorCode, List<MailData>>(ErrorCode.LoadMailDataFailWrongPage, mailData);
         }
 
@@ -27,19 +27,13 @@ public partial class GameDb : IGameDb
             mailData = await _queryFactory.Query("Mail_Data").Where("UserId", userId).Where("IsDeleted", false)
                                           .OrderByDesc("MailId").Offset((pageNumber - 1) * mailsPerPage).Limit(mailsPerPage)
                                           .GetAsync<MailData>() as List<MailData>;
-            /*
-            if (mailData.Count == 0)
-            {
-                _logger.ZLogError($"[LoadMailData] ErrorCode: {ErrorCode.LoadMailDataFailNoData}, UserId: {userId}, pageNumber: {pageNumber}");
-                return new Tuple<ErrorCode, List<MailData>>(ErrorCode.LoadMailDataFailNoData, mailData);
-            }
-            */
 
             return new Tuple<ErrorCode, List<MailData>>(ErrorCode.None, mailData);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[LoadMailData] ErrorCode: {ErrorCode.LoadMailDataFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "LoadMailData Exception");
+
             return new Tuple<ErrorCode, List<MailData>>(ErrorCode.LoadMailDataFailException, mailData);
         }
     }
@@ -50,17 +44,12 @@ public partial class GameDb : IGameDb
     {
         try
         {
-
             var content = await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
                                              .Where("UserId", userId).Where("IsDeleted", false)
                                              .Select("Content").FirstOrDefaultAsync<string>();
 
-            //var content = await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-            //                                .Select("UserId", "IsDeleted", "Content").FirstOrDefaultAsync<string>();
-
             if (content == null)
             {
-                _logger.ZLogError($"[ReadMail] ErrorCode: {ErrorCode.ReadMailFailWrongData}, MailId: {mailId}");
                 return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.ReadMailFailWrongData, null, null);
             }
 
@@ -71,25 +60,21 @@ public partial class GameDb : IGameDb
             await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
                                .UpdateAsync(new { IsRead = true });
 
-            if (mailItem.Count == 0)
-            {
-                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, content, null);
-            }
-
             return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, content, mailItem);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[ReadMail] ErrorCode: {ErrorCode.ReadMailFailException}, MailId: {mailId}");
+            _logger.ZLogError(ex, "ReadMailFail Exception");
+
             return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.ReadMailFailException, null, null);
         }
     }
 
     // 메일 아이템 수령
     // Mail_Item 테이블에서 아이템 정보 가져와서 User_Item 테이블에 추가
-    public async Task<Tuple<ErrorCode, List<UserItem>>> ReceiveMailItemAsync(Int64 mailId, Int64 userId)
+    public async Task<Tuple<ErrorCode, List<ItemInfo>>> ReceiveMailItemAsync(Int64 mailId, Int64 userId)
     {
-        var userItem = new List<UserItem>();
+        var itemInfo = new List<ItemInfo>();
 
         try
         {
@@ -99,8 +84,7 @@ public partial class GameDb : IGameDb
 
             if (isCorrectRequest == false)
             {
-                _logger.ZLogError($"[ReceiveMailItem] ErrorCode: {ErrorCode.ReceiveMailItemFailWrongData}, MailId: {mailId}");
-                return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.ReceiveMailItemFailWrongData, null);
+                return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveMailItemFailWrongData, null);
             }
 
             var mailItem = await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
@@ -118,11 +102,10 @@ public partial class GameDb : IGameDb
                         await DeleteUserItemAsync(userId, mailItem[i].ItemId, mailItem[i].ItemCount);
                     }
 
-                    _logger.ZLogError($"[ReceiveMailItem] ErrorCode: {ErrorCode.ReceiveMailItemFailInsertItem}, ItemId: {item.ItemId}");
-                    return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.ReceiveMailItemFailInsertItem, null);
+                    return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveMailItemFailInsertItem, null);
                 }
 
-                userItem.Add(newItem);
+                itemInfo.Add(newItem);
             }
 
             await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
@@ -131,12 +114,13 @@ public partial class GameDb : IGameDb
             await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
                                .UpdateAsync(new { HasItem = false });
 
-            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.None, userItem);
+            return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.None, itemInfo);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[ReceiveMailItem] ErrorCode: {ErrorCode.ReceiveMailItemFailException}, MailId: {mailId}");
-            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.ReceiveMailItemFailException, userItem);
+            _logger.ZLogError(ex, "ReceiveMailItem Exception");
+
+            return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveMailItemFailException, itemInfo);
         }
     }
 
@@ -152,7 +136,6 @@ public partial class GameDb : IGameDb
 
             if (isCorrectRequest == false)
             {
-                _logger.ZLogError($"[DeleteMail] ErrorCode: {ErrorCode.DeleteMailFailWrongData}, MailId: {mailId}");
                 return ErrorCode.DeleteMailFailWrongData;
             }
             else
@@ -165,7 +148,8 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[DeleteMail] ErrorCode: {ErrorCode.DeleteMailFailException}, MailId: {mailId}");
+            _logger.ZLogError(ex, "DeleteMail Exception");
+
             return ErrorCode.DeleteMailFailException;
         }
     }
@@ -178,14 +162,7 @@ public partial class GameDb : IGameDb
         {
             Int64 itemId;
 
-            if (_masterDb.ItemInfo.Find(i => i.Code == itemCode).Attribute == 5)
-            {
-                itemId = 0;
-            }
-            else
-            {
-                itemId = _idGenerator.CreateId();
-            }
+            itemId = _idGenerator.CreateId();
 
             await _queryFactory.Query("Mail_Item").InsertAsync(new
             {
@@ -199,7 +176,8 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[InsertItemIntoMail] ErrorCode: {ErrorCode.InsertItemIntoMailFailException}, MailId: {mailId}");
+            _logger.ZLogError(ex, "InsertItemIntoMail Exception");
+
             return ErrorCode.InsertItemIntoMailFailException;
         }
     }

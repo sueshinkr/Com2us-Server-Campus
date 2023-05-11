@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
+using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
 using ZLogger;
@@ -29,6 +30,8 @@ public class EnhanceItem : ControllerBase
         (var errorCode, response.userItem) = await _gameDb.EnhanceItemAsync(request.UserId, request.ItemId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, ItemId = request.ItemId }, "EnhanceItem Error");
+
             response.Result = errorCode;
             return response;
         }

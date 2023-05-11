@@ -63,7 +63,6 @@ public partial class GameDb : IGameDb
                     await _queryFactory.Query("User_Attendance").Where("UserId", userId).DeleteAsync();
                     await _queryFactory.Query("User_Item").Where("UserId", userId).DeleteAsync();
 
-                    _logger.ZLogError($"[CreateBasicDataAsync] ErrorCode: {ErrorCode.CreateBasicDataFailInsertItem}, accountId: {accountId}");
                     return errorCode;
                 }
             }
@@ -72,16 +71,17 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[CreateBasicDataAsync] ErrorCode: {ErrorCode.CreateBasicDataFailException}, accountId: {accountId}");
+            _logger.ZLogError(ex, "CreateBasicData Exception");
+
             return ErrorCode.CreateBasicDataFailException;
         }
     }
 
     // 유저 데이터에 아이템 추가
     // User_Item 테이블에 아이템 추가
-    private async Task<Tuple<ErrorCode, UserItem>> InsertUserItemAsync(Int64 userId, Int64 itemCode, Int64 itemCount, Int64 itemId = 0)
+    private async Task<Tuple<ErrorCode, ItemInfo>> InsertUserItemAsync(Int64 userId, Int64 itemCode, Int64 itemCount, Int64 itemId = 0)
     {
-        var userItem = new UserItem();
+        var itemInfo = new ItemInfo();
 
         try
         {
@@ -111,15 +111,16 @@ public partial class GameDb : IGameDb
                 });
             }
 
-            userItem.ItemCode = itemCode;
-            userItem.ItemCode = itemCount;
+            itemInfo.ItemCode = itemCode;
+            itemInfo.ItemCount = itemCount;
 
-            return new Tuple<ErrorCode, UserItem>(ErrorCode.None, userItem);
+            return new Tuple<ErrorCode, ItemInfo>(ErrorCode.None, itemInfo);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[InsertUserItem] ErrorCode: {ErrorCode.InsertItemFailException}, UserId: {userId}, ItemCode: {itemCode}");
-            return new Tuple<ErrorCode, UserItem>(ErrorCode.InsertItemFailException, userItem);
+            _logger.ZLogError(ex, "InsertUserItem Exception");
+            
+            return new Tuple<ErrorCode, ItemInfo>(ErrorCode.InsertItemFailException, itemInfo);
         }
     }
 
@@ -144,7 +145,6 @@ public partial class GameDb : IGameDb
 
             if (isDeleted == 0)
             {
-                _logger.ZLogDebug($"[DeleteUserItem] ErrorCode: {ErrorCode.DeleteItemFailWrongData}, UserId: {userId}, ItemId: {itemId}");
                 return ErrorCode.DeleteItemFailWrongData;
             }
 
@@ -152,7 +152,8 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[DeleteUserItem] ErrorCode: {ErrorCode.DeleteItemFailException}, UserId: {userId}, ItemId: {itemId}");
+            _logger.ZLogError(ex, "DeleteUserItem Exception");
+            
             return ErrorCode.DeleteItemFailException;
         }
     }
@@ -165,12 +166,15 @@ public partial class GameDb : IGameDb
 
         try
         {
-            userData = await _queryFactory.Query("User_Data").Where("accountId", accountId).FirstOrDefaultAsync<UserData>();
+            userData = await _queryFactory.Query("User_Data").Where("accountId", accountId)
+                                          .FirstOrDefaultAsync<UserData>();
+
             return new Tuple<ErrorCode, UserData>(ErrorCode.None, userData);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[DataLoading] ErrorCode: {ErrorCode.UserDataLoadingFailException}, accountId: {accountId}");
+            _logger.ZLogError(ex, "DataLoading Exception");
+
             return new Tuple<ErrorCode, UserData>(ErrorCode.UserDataLoadingFailException, userData);
         }
     }
@@ -190,7 +194,8 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[UserItemLoadingAsync] ErrorCode: {ErrorCode.UserItemLoadingFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "UserItemLoadingAsync Exception");
+
             return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.UserItemLoadingFailException, userItem);
         }
     } 

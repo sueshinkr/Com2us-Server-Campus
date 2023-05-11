@@ -25,26 +25,20 @@ public static class LogManager
             options =>
             {
                 options.EnableStructuredLogging = true;
-                options.PrefixFormatter = (writer, info) => ZString.Utf8Format(writer, "[{0}]", info.Timestamp.ToLocalTime().AddHours(9).DateTime);
-
-                /*
-                var time = JsonEncodedText.Encode("Timestamp");
-                var timeValue = JsonEncodedText.Encode(DateTime.Now.AddHours(9).ToString("yyyy/MM/dd HH:mm:ss"));
-
-                options.StructuredLoggingFormatter = (writer, info) =>
-                {
-                    writer.WriteString(time, timeValue);
-                    info.WriteToJsonWriter(writer);
-                };
-                */
             });
        
         builder.Logging.AddZLoggerConsole(options =>
         {
-
             options.EnableStructuredLogging = true;
-            var prefixFormat = ZString.PrepareUtf8<LogLevel, DateTime>("[{0}][{1}]");
-            options.PrefixFormatter = (writer, info) => prefixFormat.FormatTo(ref writer, info.LogLevel, info.Timestamp.DateTime.ToLocalTime());
+
+            /*options.StructuredLoggingFormatter = (writer, info) =>
+            {
+                writer.WriteString("abc", "123");
+                info.Timestamp.ToLocalTime();
+            };
+            */
+            //var prefixFormat = ZString.PrepareUtf8<LogLevel, DateTime>("[{0}][{1}]");
+            //options.PrefixFormatter = (writer, info) => prefixFormat.FormatTo(ref writer, info.LogLevel, info.Timestamp.DateTime.ToLocalTime());
             //options.PrefixFormatter = (writer, info) => ZString.Utf8Format(writer, "[{0}]", info.Timestamp.ToLocalTime().AddHours(9).DateTime);
             //options.PrefixFormatter = (writer, info) => ZString.Utf8Format(writer, "[{0}][{1}]", info.LogLevel, info.Timestamp.AddHours(9));
         });

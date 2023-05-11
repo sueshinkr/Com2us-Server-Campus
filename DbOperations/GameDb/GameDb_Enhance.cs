@@ -10,15 +10,14 @@ public partial class GameDb : IGameDb
 {
     // 아이템 강화
     // User_Item 테이블 업데이트 및 User_Item_EnhanceHistory 테이블에 데이터 추가
-    // 함수 너무 큰데 나눠야겠지... 체크 / 성공시 / 실패시 이렇게 나눠야하나 ...
     public async Task<Tuple<ErrorCode, UserItem>> EnhanceItemAsync(Int64 userId, Int64 itemId)
     {
         UserItem itemData = new UserItem();
 
         try
         {
-
             (var errorCode, itemData, var enhanceData) = await CheckEnhanceableAsync(userId, itemId);
+
             if (errorCode != ErrorCode.None)
             {
                 return new Tuple<ErrorCode, UserItem>(errorCode, itemData);
@@ -44,7 +43,7 @@ public partial class GameDb : IGameDb
                                        Attack = itemData.Attack,
                                        Defence = itemData.Defence,
                                        EnhanceCount = itemData.EnhanceCount,
-                                       IsDestroyed = itemData.IsDestoryed
+                                       IsDestroyed = itemData.IsDestroyed
                                    });
 
                 return new Tuple<ErrorCode, UserItem>(errorCode, null);
@@ -61,10 +60,11 @@ public partial class GameDb : IGameDb
                                    Attack = itemData.Attack,
                                    Defence = itemData.Defence,
                                    EnhanceCount = itemData.EnhanceCount,
-                                   IsDestroyed = itemData.IsDestoryed
+                                   IsDestroyed = itemData.IsDestroyed
                                });
 
-            _logger.ZLogError(ex, $"[EnhanceItem] ErrorCode: {ErrorCode.EnhanceItemFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "EnhanceItem Exception");
+
             return new Tuple<ErrorCode, UserItem>(ErrorCode.EnhanceItemFailException, null);
         }
     }
@@ -79,7 +79,6 @@ public partial class GameDb : IGameDb
 
             if (itemData == null)
             {
-                _logger.ZLogError($"[CheckEnhanceable] ErrorCode: {ErrorCode.CheckEnhanceableFailWrongData}, ItemId: {itemId}");
                 return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailWrongData, itemData, null);
             }
 
@@ -87,12 +86,10 @@ public partial class GameDb : IGameDb
 
             if (enhanceData.EnhanceMaxCount == 0)
             {
-                _logger.ZLogError($"[CheckEnhanceable] ErrorCode: {ErrorCode.CheckEnhanceableFailNotEnhanceable}, ItemId: {itemId}");
                 return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailNotEnhanceable, null, null);
             }
             else if (itemData.EnhanceCount == enhanceData.EnhanceMaxCount)
             {
-                _logger.ZLogError($"[CheckEnhanceable] ErrorCode: {ErrorCode.CheckEnhanceableFailAlreadyMax}, ItemId: {itemId}");
                 return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailAlreadyMax, null, null);
             }
 
@@ -102,7 +99,6 @@ public partial class GameDb : IGameDb
 
             if (hasEnoughMoney == 0)
             {
-                _logger.ZLogError($"[CheckEnhanceable] ErrorCode: {ErrorCode.CheckEnhanceableFailNotEnoughMoney}, ItemId: {itemId}");
                 return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailNotEnoughMoney, null, null);
             }
 
@@ -110,7 +106,8 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[CheckEnhanceable] ErrorCode: {ErrorCode.CheckEnhanceableFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "CheckEnhanceable Exception");
+
             return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailException, null, null);
         }
     }
@@ -152,7 +149,8 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[HandleSuccessfulEnhancement] ErrorCode: {ErrorCode.HandleSuccessfulEnhancementFailException}, ItemId: {itemId}");
+            _logger.ZLogError(ex, "HandleSuccessfulEnhancement Exception");
+
             return ErrorCode.HandleSuccessfulEnhancementFailException;
         }
     }
@@ -164,13 +162,14 @@ public partial class GameDb : IGameDb
             await _queryFactory.Query("User_Item").Where("ItemId", itemId)
                                .UpdateAsync(new { IsDestroyed = true });
 
-            itemData.IsDestoryed = true;
+            itemData.IsDestroyed = true;
 
             return ErrorCode.None;
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[HandleFailedEnhancement] ErrorCode: {ErrorCode.HandleFailedEnhancementFailException}, ItemId: {itemId}");
+            _logger.ZLogError(ex, "HandleFailedEnhancement Exception");
+
             return ErrorCode.HandleFailedEnhancementFailException;
 
         }

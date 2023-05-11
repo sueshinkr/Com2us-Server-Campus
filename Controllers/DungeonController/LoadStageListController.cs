@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
+using ZLogger;
 
 namespace WebAPIServer.Controllers;
 
@@ -30,6 +32,8 @@ public class LoadStageList : ControllerBase
         (var errorCode, response.ClearStage) = await _gameDb.LoadStageListAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "LoadStageList Error");
+
             response.Result = errorCode;
             return response;
         }

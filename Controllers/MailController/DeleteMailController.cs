@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
+using ZLogger;
 
 namespace WebAPIServer.Controllers;
 
@@ -30,6 +32,7 @@ public class DeleteMail : ControllerBase
         var errorCode = await _gameDb.DeleteMailAsync(request.MailId, request.UserId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, MailId = request.MailId }, "DeleteMail Error");
             response.Result = errorCode;
             return response;
         }

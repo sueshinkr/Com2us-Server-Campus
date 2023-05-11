@@ -28,15 +28,22 @@ public class UserItem
     public Int64 Defence { get; set; }
     public Int64 Magic { get; set; }
     public Int64 EnhanceCount { get; set; }
-    public bool IsDestoryed { get; set; }
+    public bool IsDestroyed { get; set; }
     public DateTime ObtainedAt { get; set; }
 }
 
-public class MailItem
+public class ItemInfo
 {
     public Int64 ItemId { get; set; }
     public Int64 ItemCode { get; set; }
     public Int64 ItemCount { get; set; }
+}
+
+public class MailItem : ItemInfo
+{
+    //public Int64 ItemId { get; set; }
+    //public Int64 ItemCode { get; set; }
+    //public Int64 ItemCount { get; set; }
     public bool IsReceived { get; set; }
 }
 

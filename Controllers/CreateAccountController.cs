@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
+using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
 using ZLogger;
@@ -13,14 +14,12 @@ public class CreateAccount: ControllerBase
 {
     readonly ILogger<CreateAccount> _logger;
     readonly IAccountDb _accountDb;
-    readonly IMasterDb _masterDb;
     readonly IGameDb _gameDb;
 
-    public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb, IMasterDb masterDb, IGameDb gameDb)
+    public CreateAccount(ILogger<CreateAccount> logger, IAccountDb accountDb, IGameDb gameDb)
     {
         _logger = logger;
         _accountDb = accountDb;
-        _masterDb = masterDb;
         _gameDb = gameDb;
     }
 
@@ -35,6 +34,8 @@ public class CreateAccount: ControllerBase
         (var errorCode, response.AccountId) = await _accountDb.CreateAccountAsync(request.Email, request.Password);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "CreateAccount Error");
+
             response.Result = errorCode;
             response.AccountId = 0;
             return response;
@@ -45,6 +46,8 @@ public class CreateAccount: ControllerBase
         errorCode = await _gameDb.CreateBasicDataAsync(response.AccountId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "CreateAccount Error");
+
             response.Result = errorCode;
             response.AccountId = 0;
             return response;

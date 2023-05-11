@@ -1,5 +1,6 @@
 ﻿using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
+using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Extensions;
 using System.ComponentModel.DataAnnotations;
@@ -38,6 +39,8 @@ public class Login : ControllerBase
         var (errorCode, accountId) = await _accountDb.VerifyAccountAsync(request.Email, request.Password);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "Login Error");
+
             response.Result = errorCode;
             return response;
         }
@@ -46,6 +49,8 @@ public class Login : ControllerBase
         errorCode = _masterDb.VerifyVersionDataAsync(request.AppVersion, request.MasterVersion);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "Login Error");
+
             response.Result = errorCode;
             return response;
         }
@@ -55,6 +60,8 @@ public class Login : ControllerBase
         errorCode = await _redisDb.CreateUserDataAsync(request.Email, response.Authtoken, accountId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "Login Error");
+
             response.Result = errorCode;
             return response;
         }
@@ -64,6 +71,8 @@ public class Login : ControllerBase
         (errorCode, response.userData) = await _gameDb.UserDataLoading(accountId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "Login Error");
+
             response.Result = errorCode;
             return response;
         }
@@ -72,14 +81,18 @@ public class Login : ControllerBase
         (errorCode, response.userItem) = await _gameDb.UserItemLoadingAsync(response.userData.UserId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = response.userData.UserId }, "Login Error");
+
             response.Result = errorCode;
             return response;
         }
 
         // 공지 읽어오기
-        (errorCode, response.notificationUrl) = await _redisDb.NotificationLoading();
+        (errorCode, response.notificationUrl) = await _redisDb.LoadNotification();
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = response.userData.UserId }, "Login Error");
+
             response.Result = errorCode;
         }
 

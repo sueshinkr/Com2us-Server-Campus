@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
+using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
 using ZLogger;
@@ -31,6 +32,8 @@ public class HandleNewAttendance : ControllerBase
         var errorCode = await _gameDb.HandleNewAttendanceAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "HandleNewAttendance Error");
+
             response.Result = errorCode;
             return response;
         }        

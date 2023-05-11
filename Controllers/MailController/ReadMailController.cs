@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
+using ZLogger;
 
 namespace WebAPIServer.Controllers;
 
@@ -30,6 +32,7 @@ public class ReadMail : ControllerBase
         (var errorCode, response.Content, response.Item) = await _gameDb.ReadMailAsync(request.MailId, request.UserId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, MailId = request.MailId }, "ReadMail Error");
             response.Result = errorCode;
             return response;
         }

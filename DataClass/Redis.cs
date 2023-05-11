@@ -1,8 +1,9 @@
 ﻿namespace WebAPIServer.DataClass;
 
-public class ObtainedStageItem
+/*
+public class ItemInfo
 {
-    public ObtainedStageItem(Int64 itemCode, Int64 itemCount)
+    public ItemInfo(Int64 itemCode, Int64 itemCount)
     {
         ItemCode = itemCode;
         ItemCount = itemCount;
@@ -11,6 +12,7 @@ public class ObtainedStageItem
     public Int64 ItemCode { get; set; }
     public Int64 ItemCount { get; set; }
 }
+*/
 
 public class KilledStageEnemy
 {

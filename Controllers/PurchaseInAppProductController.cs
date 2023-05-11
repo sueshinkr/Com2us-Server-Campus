@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DbOperations;
 using WebAPIServer.RequestResponse;
+using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
 using ZLogger;
@@ -29,6 +30,8 @@ public class PurchaseInAppProduct : ControllerBase
         var errorCode = await _gameDb.PurchaseInAppProductAsync(request.UserId, request.PurchaseId, request.ProductCode);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, PurchaseId = request.PurchaseId }, "PurchaseInAppProduct Error");
+
             response.Result = errorCode;
             return response;
         }

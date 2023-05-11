@@ -23,8 +23,6 @@ public partial class RedisDb : IRedisDb
         var RedisAddress = configuration.GetSection("DBConnection")["Redis"];
         var Redisconfig = new RedisConfig("basic", RedisAddress);
         _redisConn = new RedisConnection(Redisconfig);
-
-        _logger.ZLogInformation("Redis Db Connected");
     }
 
     // 유저 정보 생성
@@ -43,7 +41,6 @@ public partial class RedisDb : IRedisDb
             var redis = new RedisString<AuthUser>(_redisConn, uid, LoginTimeSpan());
             if (await redis.SetAsync(user, LoginTimeSpan()) == false)
             {
-                _logger.ZLogError($"[CreateUserData] ErrorCode: {ErrorCode.CreateUserDataFailRedis}, Email: {email}");
                 return ErrorCode.CreateUserDataFailRedis;
             }
 
@@ -51,7 +48,8 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[CreateUserData] ErrorCode: {ErrorCode.CreateUserDataFailException}, Email: {email}");
+            _logger.ZLogError(ex, "CreateUserData Exception");
+            
             return ErrorCode.CreateUserDataFailException;
         }
     }
@@ -68,14 +66,14 @@ public partial class RedisDb : IRedisDb
             var user = await redis.GetAsync();
             if (!user.HasValue)
             {
-                _logger.ZLogError($"[GetUserData] UID:{uid} is Not Assigned User");
                 return null;
             }
             return (user.Value);
         }
-        catch
+        catch (Exception ex)
         {
-            _logger.ZLogError($"[GetUserData] UID:{uid} does Not Exist");
+            _logger.ZLogError(ex, "GetUserData Exception");
+            
             return null;
         }
     }
@@ -122,7 +120,7 @@ public partial class RedisDb : IRedisDb
 
     // 공지 가져오기
     // 이게 맞을까...?
-    public async Task<Tuple<ErrorCode, string>> NotificationLoading()
+    public async Task<Tuple<ErrorCode, string>> LoadNotification()
     {
         var notificationUrl = new string("");
 
@@ -134,16 +132,16 @@ public partial class RedisDb : IRedisDb
 
             if (notificationUrl == null)
             {
-                _logger.ZLogError($"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailNoUrl}");
-                return new Tuple<ErrorCode, string>(ErrorCode.NotificationLoadingFailNoUrl, notificationUrl);
+                return new Tuple<ErrorCode, string>(ErrorCode.LoadNotificationFailNoUrl, notificationUrl);
             }
 
             return new Tuple<ErrorCode, string>(ErrorCode.None, notificationUrl);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[NotificationLoading] ErrorCode: {ErrorCode.NotificationLoadingFailException}");
-            return new Tuple<ErrorCode, string>(ErrorCode.NotificationLoadingFailException, notificationUrl);
+            _logger.ZLogError(ex, "LoadNotification Exception");
+
+            return new Tuple<ErrorCode, string>(ErrorCode.LoadNotificationFailException, notificationUrl);
         }
     }
 

@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
+using ZLogger;
 
 namespace WebAPIServer.Controllers;
 
@@ -27,9 +29,10 @@ public class ReceiveItemFromMail : ControllerBase
         var response = new ReceiveItemFromMailResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.Item) = await _gameDb.ReceiveMailItemAsync(request.MailId, request.UserId);
+        (var errorCode, response.itemInfo) = await _gameDb.ReceiveMailItemAsync(request.MailId, request.UserId);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, MailId = request.MailId }, "ReceiveItemFromMail Error");
             response.Result = errorCode;
             return response;
         }

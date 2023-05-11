@@ -17,5 +17,5 @@ public class ReceiveItemFromMailRequest
 public class ReceiveItemFromMailResponse
 {
     public ErrorCode Result { get; set; }
-    public List<UserItem> Item { get; set; }
+    public List<ItemInfo> itemInfo { get; set; }
 }

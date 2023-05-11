@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
+using ZLogger;
 
 namespace WebAPIServer.Controllers;
 
@@ -30,6 +32,8 @@ public class KillEnemy : ControllerBase
         var errorCode = await _redisDb.KillEnemyAsync(request.UserId, request.StageCode, request.EnemyCode);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode, EnemyCode = request.EnemyCode }, "KillEnemy Error");
+
             await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
 
             response.Result = errorCode;

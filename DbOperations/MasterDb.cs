@@ -51,8 +51,6 @@ public class MasterDb : IMasterDb
         StageEnemyInfo = _queryFactory.Query("StageEnemy").Select().Get<StageEnemy>() as List<StageEnemy>;
         ExpTableInfo = _queryFactory.Query("ExpTable").Select().Get<ExpTable>() as List<ExpTable>;
 
-        _logger.ZLogInformation("MasterDb Loading Completed");
-
         _dbConn.Close();
     }
 

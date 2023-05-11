@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.RequestResponse;
 using WebAPIServer.DbOperations;
+using WebAPIServer.Log;
+using ZLogger;
 
 namespace WebAPIServer.Controllers;
 
@@ -30,6 +32,7 @@ public class OpenMailBox : ControllerBase
         (var errorCode, response.mailData) = await _gameDb.LoadMailDataAsync(request.UserId, request.PageNumber);
         if (errorCode != ErrorCode.None)
         {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, PageNumber = request.PageNumber }, "OpenMailBox Error");
             response.Result = errorCode;
             return response;
         }

@@ -23,6 +23,7 @@ public partial class GameDb : IGameDb
 
             // 메일 전송
             var errorCode = await SendMailInAppProduct(userId, productCode);
+
             if (errorCode != ErrorCode.None)
             {
                 // 롤백
@@ -36,15 +37,14 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
+            _logger.ZLogError(ex, "PurchaseInAppProduct Exception");
+
             if (ex is MySqlException mysqlEx && mysqlEx.Number == 1062)
             {
-                _logger.ZLogError(mysqlEx, $"[PurchaseInAppProduct] ErrorCode: {ErrorCode.PurchaseInAppProductFailDuplicate}, PurchaseId: {purchaseId}, ErrorNum : {mysqlEx.Number}");
                 return ErrorCode.PurchaseInAppProductFailDuplicate;
-
             }
             else
             {
-                _logger.ZLogError(ex, $"[PurchaseInAppProduct] ErrorCode: {ErrorCode.PurchaseInAppProductFailException}, PurchaseId: {purchaseId}");
                 return ErrorCode.PurchaseInAppProductFailException;
             }
         }
@@ -54,13 +54,13 @@ public partial class GameDb : IGameDb
     // Mail_data 및 Mail_Item 테이블에 데이터 추가
     public async Task<ErrorCode> SendMailInAppProduct(Int64 userId, Int64 purchaseCode)
     {
-        var mailid = _idGenerator.CreateId();
+        var mailId = _idGenerator.CreateId();
 
         try
         {
             await _queryFactory.Query("Mail_Data").InsertAsync(new
             {
-                MailId = mailid,
+                MailId = mailId,
                 UserId = userId,
                 SenderId = 0,
                 Title = $"상품 {purchaseCode} 아이템 지급",
@@ -71,15 +71,16 @@ public partial class GameDb : IGameDb
 
             foreach (InAppProduct product in _masterDb.InAppProductInfo.FindAll(i => i.Code == purchaseCode))
             {
-                var itemid = _idGenerator.CreateId();
+                var errorCode = await InsertItemIntoMailAsync(mailId, product.ItemCode, product.ItemCount);
 
-                await _queryFactory.Query("Mail_Item").InsertAsync(new
+                if (errorCode != ErrorCode.None)
                 {
-                    ItemId = itemid,
-                    MailId = mailid,
-                    ItemCode = product.ItemCode,
-                    ItemCount = product.ItemCount
-                });
+                    // 롤백
+                    await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
+                    await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
+
+                    return errorCode;
+                }
             }
 
             return ErrorCode.None;
@@ -87,10 +88,11 @@ public partial class GameDb : IGameDb
         catch (Exception ex)
         {
             // 롤백
-            await _queryFactory.Query("Mail_Data").Where("MailId", mailid).DeleteAsync();
-            await _queryFactory.Query("Mail_Item").Where("MailId", mailid).DeleteAsync();
+            await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
+            await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
 
-            _logger.ZLogError(ex, $"[SendMailInAppProduct] ErrorCode: {ErrorCode.SendMailInAppProductFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "SendMailInAppProduct Exception");
+
             return ErrorCode.SendMailInAppProductFailException;
         }
     }

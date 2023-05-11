@@ -18,7 +18,6 @@ public partial class GameDb : IGameDb
 
             if (userData == null)
             {
-                _logger.ZLogError($"[LoadAttendanceData] ErrorCode: {ErrorCode.LoadAttendanceDataFailWrongUser}, UserId: {userId}");
                 return new Tuple<ErrorCode, Int64, bool>(ErrorCode.LoadAttendanceDataFailWrongUser, 0, false);
             }
 
@@ -35,7 +34,8 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[LoadAttendanceData] ErrorCode: {ErrorCode.LoadAttendanceDataFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "LoadAttendanceData Exception");
+
             return new Tuple<ErrorCode, Int64, bool>(ErrorCode.LoadAttendanceDataFailException, 0, false);
         }
     }
@@ -52,13 +52,11 @@ public partial class GameDb : IGameDb
 
             if (userData == null)
             {
-                _logger.ZLogError($"[HandleNewAttendance] ErrorCode: {ErrorCode.HandleNewAttendanceFailWrongUser}, UserId: {userId}");
                 return ErrorCode.HandleNewAttendanceFailWrongUser;
             }
 
             if (userData.LastAttendance.Day == DateTime.Now.Day)
-            {
-                _logger.ZLogError($"[HandleNewAttendance] ErrorCode: {ErrorCode.HandleNewAttendanceFailNotNewAttendance}, UserId: {userId}");
+            {                
                 return ErrorCode.HandleNewAttendanceFailNotNewAttendance;
             }
             else if (userData.AttendanceCount == 30 || userData.LastAttendance.Day + 1 < DateTime.Now.Day)
@@ -101,7 +99,8 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[HandleNewAttendance] ErrorCode: {ErrorCode.HandleNewAttendanceFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "HandleNewAttendance Exception");
+
             return ErrorCode.HandleNewAttendanceFailException;
         }
     }
@@ -128,13 +127,13 @@ public partial class GameDb : IGameDb
             });
 
             var errorCode = await InsertItemIntoMailAsync(mailId, attendanceReward.ItemCode, attendanceReward.Count);
+
             if (errorCode != ErrorCode.None)
             {
                 // 롤백
                 await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
                 await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
 
-                _logger.ZLogError($"[SendMailAttendanceReward] ErrorCode: {ErrorCode.SendMailAttendanceRewardFailInsertItemIntoMail}, UserId: {userId}");
                 return ErrorCode.SendMailAttendanceRewardFailInsertItemIntoMail;
             }
 
@@ -146,7 +145,8 @@ public partial class GameDb : IGameDb
             await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
             await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
 
-            _logger.ZLogError(ex, $"[SendMailAttendanceReward] ErrorCode: {ErrorCode.SendMailAttendanceRewardFailException}, UserId: {userId}");
+            _logger.ZLogError(ex, "SendMailAttendanceReward Exception");
+
             return ErrorCode.SendMailAttendanceRewardFailException;
         }
     }
