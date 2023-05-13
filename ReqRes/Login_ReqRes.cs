@@ -29,4 +29,5 @@ public class LoginResponse
     public UserData userData { get; set; }
     public List<UserItem> userItem { get; set; }
     public string notificationUrl { get; set; }
+    public Int64 LobbyNum { get; set; }
 }

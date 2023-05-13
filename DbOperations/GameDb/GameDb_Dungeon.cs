@@ -78,6 +78,8 @@ public partial class GameDb : IGameDb
                 return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, itemInfo, obtainExp);
             }
 
+            // 병렬작업?
+
             return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.None, itemInfo, obtainExp);
         }
         catch (Exception ex)

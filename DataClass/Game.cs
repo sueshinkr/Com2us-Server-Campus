@@ -41,9 +41,6 @@ public class ItemInfo
 
 public class MailItem : ItemInfo
 {
-    //public Int64 ItemId { get; set; }
-    //public Int64 ItemCode { get; set; }
-    //public Int64 ItemCount { get; set; }
     public bool IsReceived { get; set; }
 }
 

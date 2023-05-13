@@ -46,7 +46,7 @@ public class Login : ControllerBase
         }
 
         // 버전 데이터 검증
-        errorCode = _masterDb.VerifyVersionDataAsync(request.AppVersion, request.MasterVersion);
+        errorCode = await _masterDb.VerifyVersionDataAsync(request.AppVersion, request.MasterVersion);
         if (errorCode != ErrorCode.None)
         {
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "Login Error");
@@ -89,6 +89,15 @@ public class Login : ControllerBase
 
         // 공지 읽어오기
         (errorCode, response.notificationUrl) = await _redisDb.LoadNotification();
+        if (errorCode != ErrorCode.None)
+        {
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = response.userData.UserId }, "Login Error");
+
+            response.Result = errorCode;
+        }
+
+        // 채팅로비 접속
+        (errorCode, response.LobbyNum) = await _redisDb.EnterChatLobbyFromLoginAsync(response.userData.UserId);
         if (errorCode != ErrorCode.None)
         {
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = response.userData.UserId }, "Login Error");

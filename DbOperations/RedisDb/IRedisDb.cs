@@ -4,6 +4,8 @@ namespace WebAPIServer.DbOperations;
 
 public interface IRedisDb
 {
+    public Task<ErrorCode> Init();
+
     public Task<ErrorCode> CreateUserDataAsync(string email, string authToken, Int64 accountid);
     public Task<AuthUser> GetUserDataAsync(Int64 accountid);
     public Task<bool> SetUserReqLockAsync(string userLockKey);
@@ -15,4 +17,9 @@ public interface IRedisDb
     public Task<ErrorCode> ObtainItemAsync(Int64 userId, Int64 stageCode, Int64 itemCode, Int64 itemCount);
     public Task<ErrorCode> KillEnemyAsync(Int64 userId, Int64 stageCode, Int64 enemyCode);
     public Task<Tuple<ErrorCode, List<ItemInfo>>> CheckStageClearDataAsync(Int64 userId, Int64 stageCode);
+
+    public Task<Tuple<ErrorCode, Int64>> EnterChatLobbyFromLoginAsync(Int64 userId);
+    public Task<Tuple<ErrorCode, List<string>>> EnterChatLobbyFromSelectAsync(Int64 userId, Int64 lobbyNum);
+    public Task<ErrorCode> SendChatAsync(Int64 userId, string message);
+    public Task<Tuple<ErrorCode, List<string>>> ReceiveChatAsync(Int64 userId);
 }

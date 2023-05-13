@@ -5,6 +5,7 @@ using ZLogger;
 using Microsoft.Extensions.Logging;
 using SqlKata.Execution;
 using StackExchange.Redis;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace WebAPIServer.DbOperations;
 
@@ -23,6 +24,38 @@ public partial class RedisDb : IRedisDb
         var RedisAddress = configuration.GetSection("DBConnection")["Redis"];
         var Redisconfig = new RedisConfig("basic", RedisAddress);
         _redisConn = new RedisConnection(Redisconfig);
+    }
+
+    // 채팅로비 리스트 생성
+    //
+    public async Task<ErrorCode> Init()
+    {
+        try
+        {
+            var key = "ChatLobbyList";
+            var redis = new RedisSortedSet<Int64>(_redisConn, key, null);
+
+            if (await redis.ExistsAsync<RedisSortedSet<Int64>>() == true)
+            {
+                return ErrorCode.None;
+            }
+
+            var lobbyList = new List<RedisSortedSetEntry<Int64>>();
+            for (int i = 1; i <= 100; i++)
+            {
+                lobbyList.Add(new RedisSortedSetEntry<Int64>(i, 0));
+            }
+
+            await redis.AddAsync(lobbyList);
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, "Redis Init Exception");
+
+            return ErrorCode.RedisInitFailException;
+        }
     }
 
     // 유저 정보 생성

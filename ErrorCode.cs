@@ -3,6 +3,8 @@
     None = 0,
     GetVersionDataFailRedis = 1,
     GetVersionDataFailException = 2,
+    RedisInitFailException = 3,
+    MasterDbInitFailException = 4,
 
     CreateAccountFailDuplicate = 1001,
     CreateAccountFailException = 1002,
@@ -11,15 +13,14 @@
 
     LoginFailUserNotExist = 2001,
     LoginFailPwNotMatch = 2002,
-    LoginFailGameDataNotMatch = 2003,
-    VerifyAccountFailException = 2004,
-    VerifyVersionDataFailNoData = 2005,
-    VerifyVersionDataFailException = 2006,
-    CreateUserDataFailRedis = 2007,
-    CreateUserDataFailException = 2008,
-    LoadNotificationFailNoUrl = 2009,
-    LoadNotificationFailGetImageFromUrl = 2010,
-    LoadNotificationFailException = 2011,
+    VerifyAccountFailException = 2003,
+    VerifyVersionDataFailVersionNotMatch = 2004,
+    VerifyVersionDataFailException = 2005,
+    CreateUserDataFailRedis = 2006,
+    CreateUserDataFailException = 2007,
+    LoadNotificationFailNoUrl = 2008,
+    LoadNotificationFailGetImageFromUrl = 2009,
+    LoadNotificationFailException = 2010,
 
     InsertItemFailException = 3001,
     DeleteItemFailException = 3002,
@@ -98,5 +99,14 @@
     ReceiveItemRewardFailException = 9024,
     ReceiveExpRewardFailException = 9025,
     ReceiveStageClearRewardFailException = 9026,
-    UpdateStageClearDataFailException = 9027
+    UpdateStageClearDataFailException = 9027,
+
+    EnterChatLobbyFromLoginFailLobbyFull = 10001,
+    EnterChatLobbyFromLoginFailException = 10002,
+    EnterChatLobbyFromSelectFailLobbyFull = 10003,
+    EnterChatLobbyFromSelectFailException = 10004,
+    SendChatFailWrongUser = 10005,
+    SendChatFailException = 10006,
+    ReceiveChatFailWrongUser = 10007,
+    ReceiveChatFailException = 10008
 }

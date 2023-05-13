@@ -70,7 +70,7 @@ public class CheckUserAuth
             }
 
             // 게임 버전 데이터 검증
-            if (_masterDb.VerifyVersionDataAsync(appVersion, masterVersion) != ErrorCode.None)
+            if (await _masterDb.VerifyVersionDataAsync(appVersion, masterVersion) != ErrorCode.None)
             {
                 await SetJsonResponse(context, ErrorCode.CheckUserGameDataNotMatch);
                 return;

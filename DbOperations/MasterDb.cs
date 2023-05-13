@@ -18,14 +18,14 @@ public class MasterDb : IMasterDb
 
     readonly ILogger<MasterDb> _logger;
 
-    public VersionData VersionDataInfo { get; }
-    public List<Item> ItemInfo { get; }
-    public List<ItemAttribute> ItemAttributeInfo { get; }
-    public List<AttendanceReward> AttendanceRewardInfo { get; }
-    public List<InAppProduct> InAppProductInfo { get; }
-    public List<StageItem> StageItemInfo { get; }
-    public List<StageEnemy> StageEnemyInfo { get; }
-    public List<ExpTable> ExpTableInfo { get; }
+    public VersionData VersionDataInfo { get; set; }
+    public List<Item> ItemInfo { get; set; }
+    public List<ItemAttribute> ItemAttributeInfo { get; set; }
+    public List<AttendanceReward> AttendanceRewardInfo { get; set; }
+    public List<InAppProduct> InAppProductInfo { get; set; }
+    public List<StageItem> StageItemInfo { get; set; }
+    public List<StageEnemy> StageEnemyInfo { get; set; }
+    public List<ExpTable> ExpTableInfo { get; set; }
 
     IDbConnection _dbConn;
     QueryFactory _queryFactory;
@@ -39,37 +39,51 @@ public class MasterDb : IMasterDb
 
         var compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, compiler);
+    }
 
-        _logger.ZLogInformation("MasterDb Connected");
+    public async Task<ErrorCode> Init()
+    {
+        var aa = _dbConn.State;
+        try
+        {
+            VersionDataInfo = await _queryFactory.Query("VersionData").FirstOrDefaultAsync<VersionData>();
+            ItemInfo = await _queryFactory.Query("Item").GetAsync<Item>() as List<Item>;
+            ItemAttributeInfo = await _queryFactory.Query("ItemAttribute").GetAsync<ItemAttribute>() as List<ItemAttribute>;
+            AttendanceRewardInfo = await _queryFactory.Query("AttendanceReward").GetAsync<AttendanceReward>() as List<AttendanceReward>;
+            InAppProductInfo = await _queryFactory.Query("InAppProduct").GetAsync<InAppProduct>() as List<InAppProduct>;
+            StageItemInfo = await _queryFactory.Query("StageItem").GetAsync<StageItem>() as List<StageItem>;
+            StageEnemyInfo = await _queryFactory.Query("StageEnemy").GetAsync<StageEnemy>() as List<StageEnemy>;
+            ExpTableInfo = await _queryFactory.Query("ExpTable").GetAsync<ExpTable>() as List<ExpTable>;
 
-        VersionDataInfo = _queryFactory.Query("VersionData").Select().FirstOrDefault<VersionData>();
-        ItemInfo = _queryFactory.Query("Item").Select().Get<Item>() as List<Item>;
-        ItemAttributeInfo = _queryFactory.Query("ItemAttribute").Select().Get<ItemAttribute>() as List<ItemAttribute>;
-        AttendanceRewardInfo = _queryFactory.Query("AttendanceReward").Select().Get<AttendanceReward>() as List<AttendanceReward>;
-        InAppProductInfo = _queryFactory.Query("InAppProduct").Select().Get<InAppProduct>() as List<InAppProduct>;
-        StageItemInfo = _queryFactory.Query("StageItem").Select().Get<StageItem>() as List<StageItem>;
-        StageEnemyInfo = _queryFactory.Query("StageEnemy").Select().Get<StageEnemy>() as List<StageEnemy>;
-        ExpTableInfo = _queryFactory.Query("ExpTable").Select().Get<ExpTable>() as List<ExpTable>;
+            _dbConn.Close();
 
-        _dbConn.Close();
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            _logger.ZLogError(ex, "MasterDb Init Exception");
+
+            return ErrorCode.MasterDbInitFailException;
+        }
+
     }
 
     // 게임 버전 검증
     // MasterData에서 가져온 데이터를 바탕으로 검증
-    public ErrorCode VerifyVersionDataAsync(double appVersion, double masterVersion)
+    public async Task<ErrorCode> VerifyVersionDataAsync(double appVersion, double masterVersion)
     {
         try
         {
             if (VersionDataInfo.AppVersion != appVersion || VersionDataInfo.MasterVersion != masterVersion)
             {
-                return ErrorCode.LoginFailGameDataNotMatch;
+                return ErrorCode.VerifyVersionDataFailVersionNotMatch;
             }
 
             return ErrorCode.None;
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[VerifyVersionData] ErrorCode: {ErrorCode.VerifyVersionDataFailException}");
+            _logger.ZLogError(ex, $"[VerifyVersionDataAsync] ErrorCode: {ErrorCode.VerifyVersionDataFailException}");
             return ErrorCode.VerifyVersionDataFailException;
         }
     }

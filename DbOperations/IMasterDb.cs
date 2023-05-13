@@ -14,6 +14,8 @@ public interface IMasterDb
     List<StageEnemy> StageEnemyInfo { get; }
     List<ExpTable> ExpTableInfo { get; }
 
-    public ErrorCode VerifyVersionDataAsync(double appVersion, double masterVersion);
+    public Task<ErrorCode> Init();
+
+    public Task<ErrorCode> VerifyVersionDataAsync(double appVersion, double masterVersion);
 }
 

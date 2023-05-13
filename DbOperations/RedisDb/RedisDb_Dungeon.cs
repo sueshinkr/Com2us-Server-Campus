@@ -173,7 +173,7 @@ public partial class RedisDb : IRedisDb
             }
             else
             {
-                enemyList.Add(new KilledStageEnemy(enemyCode, 1));
+                enemyList.Add(new KilledStageEnemy { EnemyCode = enemyCode, EnemyCount = 1 });
             }
 
             if (await redis.SetAsync(new Tuple<List<KilledStageEnemy>, Int64>(enemyList, stageCode)) == false)
