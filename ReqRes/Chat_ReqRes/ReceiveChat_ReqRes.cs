@@ -11,7 +11,6 @@ public class ReceiveChatRequest
     public double AppVersion { get; set; }
     public double MasterVersion { get; set; }
     public Int64 UserId { get; set; }
-    public Int64 LobbyNum { get; set; }
 }
 
 public class ReceiveChatResponse

@@ -11,7 +11,6 @@ public class ClearStageRequest
     public double AppVersion { get; set; }
     public double MasterVersion { get; set; }
     public Int64 UserId { get; set; }
-    public Int64 StageCode { get; set; }
     public Int64 ClearRank { get; set; }
     public TimeSpan ClearTime { get; set; }
 }

@@ -10,7 +10,7 @@ namespace WebAPIServer.DbOperations;
 public partial class RedisDb : IRedisDb
 {
     // 로그인시 채팅로비 접속
-    //
+    // 
     public async Task<Tuple<ErrorCode, Int64>> EnterChatLobbyFromLoginAsync(Int64 userId)
     {
         try
@@ -31,7 +31,13 @@ public partial class RedisDb : IRedisDb
             key = "User_" + userId + "_Lobby";
             var lobbyUserRedis = new RedisString<Int64>(_redisConn, key, null);
 
-            await lobbyUserRedis.SetAsync(lobbyNum[0], TimeSpan.FromDays(1));
+            if (await lobbyUserRedis.SetAsync(lobbyNum[0], TimeSpan.FromDays(1)) == false)
+            {
+                // 롤백
+                await lobbyListRedis.DecrementAsync(lobbyNum[0], 1);
+
+                return new Tuple<ErrorCode, Int64>(ErrorCode.EnterChatLobbyFromLoginFailRedis, 0);
+            }
 
             return new Tuple<ErrorCode, Int64>(ErrorCode.None, lobbyNum[0]);
         }
@@ -45,26 +51,47 @@ public partial class RedisDb : IRedisDb
 
     // 채팅로비 지정 접속
     //
-    public async Task<Tuple<ErrorCode, List<string>>> EnterChatLobbyFromSelectAsync(Int64 userId, Int64 lobbyNum)
+    public async Task<Tuple<ErrorCode, List<string>>>   SelectChatLobbyAsync(Int64 userId, Int64 lobbyNum)
     {
         try
         {
-            var key = "LobbyList";
+            var key = "User_" + userId + "_Lobby";
+            var lobbyUserRedis = new RedisString<Int64>(_redisConn, key, null);
+            var lobbyUserRedisResult = await lobbyUserRedis.GetAsync();
+
+            if (lobbyUserRedisResult.HasValue == false)
+            {
+                return new Tuple<ErrorCode, List<string>>(ErrorCode.SelectChatLobbyFailWrongUser, null);
+            }
+
+            var beforeLobbyNum = lobbyUserRedisResult.Value;
+
+            if (beforeLobbyNum == lobbyNum)
+            {
+                return new Tuple<ErrorCode, List<string>>(ErrorCode.SelectChatLobbyFailAlreadyIn, null);
+            }
+
+            key = "LobbyList";
             var lobbyListRedis = new RedisSortedSet<Int64>(_redisConn, key, null);
 
             if (await lobbyListRedis.ScoreAsync(lobbyNum) > 99)
             {
-                return new Tuple<ErrorCode, List<string>>(ErrorCode.EnterChatLobbyFromSelectFailLobbyFull, null);
+                return new Tuple<ErrorCode, List<string>>(ErrorCode.SelectChatLobbyFailLobbyFull, null);
             }
             else
             {
+                await lobbyListRedis.DecrementAsync(beforeLobbyNum, 1);
                 await lobbyListRedis.IncrementAsync(lobbyNum, 1);
+
+                if (await lobbyUserRedis.SetAsync(lobbyNum, TimeSpan.FromDays(1)) == false)
+                {
+                    // 롤백
+                    await lobbyListRedis.IncrementAsync(beforeLobbyNum, 1);
+                    await lobbyListRedis.DecrementAsync(lobbyNum, 1);
+
+                    return new Tuple<ErrorCode, List<string>>(ErrorCode.SelectChatLobbyFailRedis, null);
+                }
             }
-
-            key = "User_" + userId + "_Lobby";
-            var lobbyUserRedis = new RedisString<Int64>(_redisConn, key, null);
-
-            await lobbyUserRedis.SetAsync(lobbyNum, TimeSpan.FromDays(1));
 
             (var errorCode, var chatHistory) = await ReceiveChatAsync(userId);
             if (errorCode != ErrorCode.None)
@@ -76,9 +103,9 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "EnterChatLobbyFromSelect Exception");
+            _logger.ZLogError(ex, "SelectChatLobby Exception");
 
-            return new Tuple<ErrorCode, List<string>>(ErrorCode.EnterChatLobbyFromSelectFailException, null);
+            return new Tuple<ErrorCode, List<string>>(ErrorCode.SelectChatLobbyFailException, null);
         }
     }
 
@@ -92,18 +119,22 @@ public partial class RedisDb : IRedisDb
             var lobbyUserRedis = new RedisString<Int64>(_redisConn, key, null);
 
             var lobbyUserRedisResult = await lobbyUserRedis.GetAsync();
-            var lobbyNum = lobbyUserRedisResult.Value;
-            if (lobbyNum == 0)
+            if (lobbyUserRedisResult.HasValue == false)
             {
                 return ErrorCode.SendChatFailWrongUser;
             }
 
+            var lobbyNum = lobbyUserRedisResult.Value;
             key = "Lobby_" + lobbyNum + "_History";
+
             var lobbyRedis = new RedisSortedSet<string>(_redisConn, key, null);
 
             var timeStamp = DateTimeOffset.Now;
 
-            await lobbyRedis.AddAsync($"User:{userId},TimeStamp:{timeStamp},Message:{message}", timeStamp.ToUnixTimeSeconds(), TimeSpan.FromDays(1));
+            if (await lobbyRedis.AddAsync($"User:{userId},TimeStamp:{timeStamp},Message:{message}", timeStamp.ToUnixTimeSeconds(), TimeSpan.FromDays(1)) == false)
+            {
+                return ErrorCode.SendChatFailRedis;
+            }
 
             return ErrorCode.None;
         }
@@ -119,30 +150,33 @@ public partial class RedisDb : IRedisDb
     //
     public async Task<Tuple<ErrorCode, List<string>>> ReceiveChatAsync(Int64 userId)
     {
+        var chatHistory = new List<string>();
+
         try
         {
             var key = "User_" + userId + "_Lobby";
             var lobbyUserRedis = new RedisString<Int64>(_redisConn, key, null);
 
             var lobbyUserRedisResult = await lobbyUserRedis.GetAsync();
-            var lobbyNum = lobbyUserRedisResult.Value;
-            if (lobbyNum == 0)
+            if (lobbyUserRedisResult.HasValue == false)
             {
-                return new Tuple<ErrorCode, List<string>>(ErrorCode.ReceiveChatFailWrongUser, null);
+                return new Tuple<ErrorCode, List<string>>(ErrorCode.ReceiveChatFailWrongUser, chatHistory);
             }
-
+            
+            var lobbyNum = lobbyUserRedisResult.Value;
             key = "Lobby_" + lobbyNum + "_History";
 
             var lobbyRedis = new RedisSortedSet<string>(_redisConn, key, null);
 
             if (await lobbyRedis.ExistsAsync<RedisSortedSet<string>>() == false)
             {
-                return new Tuple<ErrorCode, List<string>>(ErrorCode.None, null);
+                return new Tuple<ErrorCode, List<string>>(ErrorCode.None, chatHistory);
             }
 
-            var chatHistory = await lobbyRedis.RangeByScoreAsync(order: Order.Descending, take: 50);
+            var chatHistoryArray = await lobbyRedis.RangeByScoreAsync(order: Order.Descending, take: 50);
+            chatHistory = chatHistoryArray.ToList();
 
-            return new Tuple<ErrorCode, List<string>>(ErrorCode.None, chatHistory.ToList());
+            return new Tuple<ErrorCode, List<string>>(ErrorCode.None, chatHistory);
         }
         catch (Exception ex)
         {

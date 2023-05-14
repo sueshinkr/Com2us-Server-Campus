@@ -31,40 +31,40 @@ public class ClearStage : ControllerBase
         var response = new ClearStageResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, var itemList) = await _redisDb.CheckStageClearDataAsync(request.UserId, request.StageCode);
+        (var errorCode, var itemList, var stageCode) = await _redisDb.CheckStageClearDataAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode, ClearRank = request.ClearRank, ClearTime = request.ClearTime }, "ClearStage Error");
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "ClearStage Error");
 
-            await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+            await _redisDb.DeleteStageProgressDataAsync(request.UserId);
 
             response.Result = errorCode;
             return response;
         }
 
-        (errorCode, response.itemInfo, response.ObtainExp) = await _gameDb.ReceiveStageClearRewardAsync(request.UserId, request.StageCode, itemList);
+        (errorCode, response.itemInfo, response.ObtainExp) = await _gameDb.ReceiveStageClearRewardAsync(request.UserId, stageCode, itemList);
         if (errorCode != ErrorCode.None)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode, ClearRank = request.ClearRank, ClearTime = request.ClearTime }, "ClearStage Error");
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "ClearStage Error");
 
-            await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+            await _redisDb.DeleteStageProgressDataAsync(request.UserId);
 
             response.Result = errorCode;
             return response;
         }
 
-        errorCode = await _gameDb.UpdateStageClearDataAsync(request.UserId, request.StageCode, request.ClearRank, request.ClearTime);
+        errorCode = await _gameDb.UpdateStageClearDataAsync(request.UserId, stageCode, request.ClearRank, request.ClearTime);
         if (errorCode != ErrorCode.None)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode, ClearRank = request.ClearRank, ClearTime = request.ClearTime }, "ClearStage Error");
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "ClearStage Error");
 
-            await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+            await _redisDb.DeleteStageProgressDataAsync(request.UserId);
 
             response.Result = errorCode;
             return response;
         }
 
-        await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+        await _redisDb.DeleteStageProgressDataAsync(request.UserId);
 
         return response;
     }

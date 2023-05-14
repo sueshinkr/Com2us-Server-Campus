@@ -17,6 +17,6 @@ public class SelectStageRequest
 public class SelectStageResponse
 {
     public ErrorCode Result { get; set; }
-    public List<Int64> stageItem { get; set; }
+    public List<StageItem> stageItem { get; set; }
     public List<StageEnemy> stageEnemy { get; set; }
 }

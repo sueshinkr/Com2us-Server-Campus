@@ -102,11 +102,16 @@
     UpdateStageClearDataFailException = 9027,
 
     EnterChatLobbyFromLoginFailLobbyFull = 10001,
-    EnterChatLobbyFromLoginFailException = 10002,
-    EnterChatLobbyFromSelectFailLobbyFull = 10003,
-    EnterChatLobbyFromSelectFailException = 10004,
-    SendChatFailWrongUser = 10005,
-    SendChatFailException = 10006,
-    ReceiveChatFailWrongUser = 10007,
-    ReceiveChatFailException = 10008
+    EnterChatLobbyFromLoginFailRedis = 10002,
+    EnterChatLobbyFromLoginFailException = 10003,
+    SelectChatLobbyFailWrongUser = 10004,
+    SelectChatLobbyFailAlreadyIn = 10005,
+    SelectChatLobbyFailLobbyFull = 10006,
+    SelectChatLobbyFailRedis = 10007,
+    SelectChatLobbyFailException = 10008,
+    SendChatFailWrongUser = 10009,
+    SendChatFailRedis = 10010,
+    SendChatFailException = 10011,
+    ReceiveChatFailWrongUser = 10012,
+    ReceiveChatFailException = 10013
 }

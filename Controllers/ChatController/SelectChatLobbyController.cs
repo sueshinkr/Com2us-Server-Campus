@@ -10,27 +10,27 @@ namespace WebAPIServer.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class EnterChatLobbyFromSelect : ControllerBase
+public class SelectChatLobby : ControllerBase
 {
     readonly ILogger<Login> _logger;
     readonly IRedisDb _redisDb;
 
-    public EnterChatLobbyFromSelect(ILogger<Login> logger, IRedisDb redisDb)
+    public SelectChatLobby(ILogger<Login> logger, IRedisDb redisDb)
     {
         _logger = logger;
         _redisDb = redisDb;
     }
 
     [HttpPost]
-    public async Task<EnterChatLobbyFromSelectResponse> Post(EnterChatLobbyFromSelectRequest request)
+    public async Task<SelectChatLobbyResponse> Post(SelectChatLobbyRequest request)
     {
-        var response = new EnterChatLobbyFromSelectResponse();
+        var response = new SelectChatLobbyResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.ChatHistory) = await _redisDb.EnterChatLobbyFromSelectAsync(request.UserId, request.LobbyNum);
+        (var errorCode, response.ChatHistory) = await _redisDb.SelectChatLobbyAsync(request.UserId, request.LobbyNum);
         if (errorCode != ErrorCode.None)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, LobbyNum = request.LobbyNum }, "EnterChatLobbyFromSelect Error");
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, LobbyNum = request.LobbyNum }, "SelectChatLobby Error");
 
             response.Result = errorCode;
             return response;

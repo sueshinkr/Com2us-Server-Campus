@@ -45,6 +45,7 @@ public class StageItem
 {
     public Int64 Code { get; }
     public Int64 ItemCode { get; }
+    public Int64 Count { get; }
 }
 
 public class StageEnemy

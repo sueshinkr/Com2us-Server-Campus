@@ -31,10 +31,10 @@ public class AbortStage : ControllerBase
         var response = new AbortStageResponse();
         response.Result = ErrorCode.None;
 
-        var errorCode = await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+        var errorCode = await _redisDb.DeleteStageProgressDataAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode }, "AbortStage Error");
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "AbortStage Error");
 
             response.Result = errorCode;
             return response;

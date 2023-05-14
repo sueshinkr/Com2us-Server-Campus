@@ -17,24 +17,24 @@ public partial class RedisDb : IRedisDb
 
         try
         {
-            var itemRedis = new RedisString<Tuple<List<ItemInfo>, Int64>>(_redisConn, stageItemKey, null);
-            var enemyRedis = new RedisString<Tuple<List<KilledStageEnemy>, Int64>>(_redisConn, stageEnemyKey, null);
+            var itemRedis = new RedisString<ObtainedStageItem>(_redisConn, stageItemKey, null);
+            var enemyRedis = new RedisString<KilledStageEnemy>(_redisConn, stageEnemyKey, null);
 
-            var item = await itemRedis.GetAsync();
-            var enemy = await enemyRedis.GetAsync();
+            var itemRedisResult = await itemRedis.GetAsync();
+            var enemyRedisResult = await enemyRedis.GetAsync();
 
-            if (item.HasValue == true || enemy.HasValue == true)
+            if (itemRedisResult.HasValue == true || enemyRedisResult.HasValue == true)
             {
-                await DeleteStageProgressDataAsync(userId, stageCode);
+                await DeleteStageProgressDataAsync(userId);
 
                 return ErrorCode.CreateStageProgressDataFailAlreadyIn;
             }
             else
             {
-                var itemList = new Tuple<List<ItemInfo>, Int64>(new List<ItemInfo>(), stageCode);
-                var enemyList = new Tuple<List<KilledStageEnemy>, Int64>(new List<KilledStageEnemy>(), stageCode);
+                var item = new ObtainedStageItem { obtainedItemList = new List<ItemInfo>(), StageCode = stageCode };
+                var enemy = new KilledStageEnemy { KilledEnemyList = new List<KilledEnemy>(), StageCode = stageCode };
 
-                if (await itemRedis.SetAsync(itemList) == false || await enemyRedis.SetAsync(enemyList) == false)
+                if (await itemRedis.SetAsync(item) == false || await enemyRedis.SetAsync(enemy) == false)
                 {
                     return ErrorCode.CreateStageProgressDataFailRedis;
                 }
@@ -52,15 +52,15 @@ public partial class RedisDb : IRedisDb
 
     // 스테이지 진행 정보 삭제
     // UserId에 해당하는 키 제거
-    public async Task<ErrorCode> DeleteStageProgressDataAsync(Int64 userId, Int64 stageCode)
+    public async Task<ErrorCode> DeleteStageProgressDataAsync(Int64 userId)
     {
         var stageItemKey = "Stage_" + userId + "_Item";
         var stageEnemyKey = "Stage_" + userId + "_Enemy";
 
         try
         {
-            var itemRedis = new RedisString<Tuple<List<ItemInfo>, Int64>>(_redisConn, stageItemKey, null);
-            var enemyRedis = new RedisString<Tuple<List<KilledStageEnemy>, Int64>>(_redisConn, stageEnemyKey, null);
+            var itemRedis = new RedisString<ObtainedStageItem>(_redisConn, stageItemKey, null);
+            var enemyRedis = new RedisString<KilledStageEnemy>(_redisConn, stageEnemyKey, null);
 
             if (await itemRedis.DeleteAsync() == false | await enemyRedis.DeleteAsync() == false)
             {
@@ -79,49 +79,40 @@ public partial class RedisDb : IRedisDb
 
     // 스테이지 아이템 획득
     // 유저의 stageItemKey에 아이템 추가
-    public async Task<ErrorCode> ObtainItemAsync(Int64 userId, Int64 stageCode, Int64 itemCode, Int64 itemCount)
+    public async Task<ErrorCode> ObtainItemAsync(Int64 userId, Int64 itemCode, Int64 itemCount)
     {
-        var isRightItem = _masterDb.StageItemInfo.Find(i => i.Code == stageCode && i.ItemCode == itemCode);
-
-        if (isRightItem == null)
-        {
-            return ErrorCode.ObtainItemFailWrongItem;
-        }
-
         var stageItemKey = "Stage_" + userId + "_Item";
 
         try
         {
-            var redis = new RedisString<Tuple<List<ItemInfo>, Int64>>(_redisConn, stageItemKey, null);
-            var itemResult = await redis.GetAsync();
+            var obtainedItemRedis = new RedisString<ObtainedStageItem>(_redisConn, stageItemKey, null);
+            var obtainedItemRedisResult = await obtainedItemRedis.GetAsync();
 
-            if (itemResult.HasValue == false)
+            if (obtainedItemRedisResult.HasValue == false)
             {
                 return ErrorCode.ObtainItemFailWrongKey;
             }
 
-            if (itemResult.Value.Item2 != stageCode)
-            {                
-                return ErrorCode.ObtainItemFailWrongStage;
+            var stageCode = obtainedItemRedisResult.Value.StageCode;
+
+            if (_masterDb.StageItemInfo.Find(i => i.Code == stageCode && i.ItemCode == itemCode) == null)
+            {
+                return ErrorCode.ObtainItemFailWrongItem;
             }
 
-            var itemlist = itemResult.Value.Item1;
-            var index = itemlist.FindIndex(i => i.ItemCode == itemCode);
+            var obtainedItemList = obtainedItemRedisResult.Value.obtainedItemList;
+            var index = obtainedItemList.FindIndex(i => i.ItemCode == itemCode);
 
             if (index >= 0)
             {
-                itemlist[index].ItemCount += itemCount;
+                obtainedItemList[index].ItemCount += itemCount;
             }
             else
             {
-                var newItem = new ItemInfo();
-                newItem.ItemCode = itemCode;
-                newItem.ItemCount = itemCount;
-
-                itemlist.Add(newItem);
+                obtainedItemList.Add(new ItemInfo { ItemCode = itemCode, ItemCount = itemCount });
             }
 
-            if (await redis.SetAsync(new Tuple<List<ItemInfo>, Int64>(itemlist, stageCode)) == false)
+            if (await obtainedItemRedis.SetAsync(obtainedItemRedisResult.Value) == false)
             {
                 return ErrorCode.ObtainItemFailRedis;
             }
@@ -138,45 +129,40 @@ public partial class RedisDb : IRedisDb
 
     // 스테이지 적 제거 
     // 유저의 stageEnemyKey에 적 추가
-    public async Task<ErrorCode> KillEnemyAsync(Int64 userId, Int64 stageCode, Int64 enemyCode)
+    public async Task<ErrorCode> KillEnemyAsync(Int64 userId,Int64 enemyCode)
     {
-        var isRightEnemy = _masterDb.StageEnemyInfo.Find(i => i.Code == stageCode && i.NpcCode == enemyCode);
-
-        if (isRightEnemy == null)
-        {            
-            return ErrorCode.KillEnemyFailWrongEnemy;
-        }
-
         var stageEnemyKey = "Stage_" + userId + "_Enemy";
 
         try
         {
-            var redis = new RedisString<Tuple<List<KilledStageEnemy>, Int64>>(_redisConn, stageEnemyKey, null);
-            var enemyResult = await redis.GetAsync();
+            var killedEnemyRedis = new RedisString<KilledStageEnemy>(_redisConn, stageEnemyKey, null);
+            var killedEnemyRedisResult = await killedEnemyRedis.GetAsync();
 
-            if (enemyResult.HasValue == false)
+            if (killedEnemyRedisResult.HasValue == false)
             {
                 return ErrorCode.KillEnemyFailWrongKey;
             }
 
-            if (enemyResult.Value.Item2 != stageCode)
-            { 
-                return ErrorCode.KillEnemyFailWrongStage;
+            var stageCode = killedEnemyRedisResult.Value.StageCode;
+
+            if (_masterDb.StageEnemyInfo.Find(i => i.Code == stageCode && i.NpcCode == enemyCode) == null)
+            {
+                return ErrorCode.KillEnemyFailWrongEnemy;
             }
 
-            var enemyList = enemyResult.Value.Item1;           
-            var index = enemyList.FindIndex(i => i.EnemyCode == enemyCode);
+            var killedEnemyList = killedEnemyRedisResult.Value.KilledEnemyList;
+            var index = killedEnemyList.FindIndex(i => i.EnemyCode == enemyCode);
 
             if (index >= 0)
             {
-                enemyList[index].EnemyCount += 1;
+                killedEnemyList[index].EnemyCount += 1;
             }
             else
             {
-                enemyList.Add(new KilledStageEnemy { EnemyCode = enemyCode, EnemyCount = 1 });
+                killedEnemyList.Add(new KilledEnemy { EnemyCode = enemyCode, EnemyCount = 1 });
             }
 
-            if (await redis.SetAsync(new Tuple<List<KilledStageEnemy>, Int64>(enemyList, stageCode)) == false)
+            if (await killedEnemyRedis.SetAsync(killedEnemyRedisResult.Value) == false)
             {
                 return ErrorCode.KillEnemyFailRedis;
             }
@@ -193,54 +179,58 @@ public partial class RedisDb : IRedisDb
 
     // 스테이지 클리어 확인
     // MasterData의 StageEnemy 데이터와 redis에 저장해놓은 데이터 비교 
-    public async Task<Tuple<ErrorCode, List<ItemInfo>>> CheckStageClearDataAsync(Int64 userId, Int64 stageCode)
+    public async Task<Tuple<ErrorCode, List<ItemInfo>, Int64>> CheckStageClearDataAsync(Int64 userId)
     {
         var stageItemKey = "Stage_" + userId + "_Item";
         var stageEnemyKey = "Stage_" + userId + "_Enemy";
 
         try
         {
-            var enemyRedis = new RedisString<Tuple<List<KilledStageEnemy>, Int64>>(_redisConn, stageEnemyKey, null);
-            var enemyResult = await enemyRedis.GetAsync();
+            var enemyRedis = new RedisString<KilledStageEnemy>(_redisConn, stageEnemyKey, null);
+            var enemyRedisResult = await enemyRedis.GetAsync();
 
-            if (enemyResult.HasValue == false)
+            if (enemyRedisResult.HasValue == false)
             {
-                return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.CheckStageClearDataFailWrongKey, null);
+                return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.CheckStageClearDataFailWrongKey, null, 0);
             }
 
-            if (enemyResult.Value.Item2 != stageCode)
-            {                
-                return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.CheckStageClearDataFailWrongStage, null);
-            }
-
-            var enemyList = enemyResult.Value.Item1;
+            var stageCode = enemyRedisResult.Value.StageCode;
+            var enemyList = enemyRedisResult.Value.KilledEnemyList;
 
             foreach (StageEnemy stageEnemy in _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode))
             {
                 if (enemyList.Find(i => i.EnemyCode == stageEnemy.NpcCode && i.EnemyCount == stageEnemy.Count) == null)
                 {
-                    return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.CheckStageClearDataFailWrongData, null);
+                    return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.CheckStageClearDataFailWrongData, null, 0);
                 }
             }
 
             // 획득한 아이템 정보 가져오기
-            var itemRedis = new RedisString<Tuple<List<ItemInfo>, Int64>>(_redisConn, stageItemKey, null);
-            var itemResult = await itemRedis.GetAsync();
+            var itemRedis = new RedisString<ObtainedStageItem>(_redisConn, stageItemKey, null);
+            var itemRedisResult = await itemRedis.GetAsync();
 
-            if (itemResult.Value.Item2 != stageCode)
+            if (itemRedisResult.HasValue == false)
             {
-                return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.CheckStageClearDataFailWrongStage, null);
+                return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.CheckStageClearDataFailWrongKey, null, 0);
             }
 
-            var itemList = itemResult.Value.Item1;
+            var itemList = itemRedisResult.Value.obtainedItemList;
 
-            return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.None, itemList);
+            foreach (ItemInfo item in itemList)
+            {
+                if (_masterDb.StageItemInfo.Find(i => i.ItemCode == item.ItemCode && i.Count >= item.ItemCount) == null)
+                {
+                    return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.CheckStageClearDataFailWrongData, null, 0);
+                }
+            }
+
+            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.None, itemList, stageCode);
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex, "CheckStageClearData Exception");
             
-            return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.CheckStageClearDataFailException, null);
+            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.CheckStageClearDataFailException, null, 0);
         }
     }
 }

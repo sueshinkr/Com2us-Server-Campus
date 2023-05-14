@@ -29,12 +29,12 @@ public class ObtainItem : ControllerBase
         var response = new ObtainItemResponse();
         response.Result = ErrorCode.None;
 
-        var errorCode = await _redisDb.ObtainItemAsync(request.UserId, request.StageCode, request.ItemCode, request.ItemCount);
+        var errorCode = await _redisDb.ObtainItemAsync(request.UserId, request.ItemCode, request.ItemCount);
         if (errorCode != ErrorCode.None)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode, ItemCode = request.ItemCode, ItemCount = request.ItemCount }, "ObtainItem Error");
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, ItemCode = request.ItemCode, ItemCount = request.ItemCount }, "ObtainItem Error");
 
-            await _redisDb.DeleteStageProgressDataAsync(request.UserId, request.StageCode);
+            await _redisDb.DeleteStageProgressDataAsync(request.UserId);
 
             response.Result = errorCode;
             return response;

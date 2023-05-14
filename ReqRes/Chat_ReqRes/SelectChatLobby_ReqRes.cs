@@ -4,7 +4,7 @@ using WebAPIServer.DataClass;
 
 namespace WebAPIServer.RequestResponse;
 
-public class EnterChatLobbyFromSelectRequest
+public class SelectChatLobbyRequest
 {
     public Int64 AccountId { get; set; }
     public string AuthToken { get; set; }
@@ -14,7 +14,7 @@ public class EnterChatLobbyFromSelectRequest
     public Int64 LobbyNum { get; set; }
 }
 
-public class EnterChatLobbyFromSelectResponse
+public class SelectChatLobbyResponse
 {
     public ErrorCode Result { get; set; }
     public List<string> ChatHistory { get; set; }

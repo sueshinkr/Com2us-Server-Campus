@@ -13,13 +13,13 @@ public interface IRedisDb
     public Task<Tuple<ErrorCode, string>> LoadNotification();
 
     public Task<ErrorCode> CreateStageProgressDataAsync(Int64 userId, Int64 stageCode);
-    public Task<ErrorCode> DeleteStageProgressDataAsync(Int64 userId, Int64 stageCode);
-    public Task<ErrorCode> ObtainItemAsync(Int64 userId, Int64 stageCode, Int64 itemCode, Int64 itemCount);
-    public Task<ErrorCode> KillEnemyAsync(Int64 userId, Int64 stageCode, Int64 enemyCode);
-    public Task<Tuple<ErrorCode, List<ItemInfo>>> CheckStageClearDataAsync(Int64 userId, Int64 stageCode);
+    public Task<ErrorCode> DeleteStageProgressDataAsync(Int64 userId);
+    public Task<ErrorCode> ObtainItemAsync(Int64 userId, Int64 itemCode, Int64 itemCount);
+    public Task<ErrorCode> KillEnemyAsync(Int64 userId, Int64 enemyCode);
+    public Task<Tuple<ErrorCode, List<ItemInfo>, Int64>> CheckStageClearDataAsync(Int64 userId);
 
     public Task<Tuple<ErrorCode, Int64>> EnterChatLobbyFromLoginAsync(Int64 userId);
-    public Task<Tuple<ErrorCode, List<string>>> EnterChatLobbyFromSelectAsync(Int64 userId, Int64 lobbyNum);
+    public Task<Tuple<ErrorCode, List<string>>> SelectChatLobbyAsync(Int64 userId, Int64 lobbyNum);
     public Task<ErrorCode> SendChatAsync(Int64 userId, string message);
     public Task<Tuple<ErrorCode, List<string>>> ReceiveChatAsync(Int64 userId);
 }

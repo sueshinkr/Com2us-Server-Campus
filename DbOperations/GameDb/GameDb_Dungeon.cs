@@ -29,31 +29,31 @@ public partial class GameDb : IGameDb
 
     // 선택한 스테이지 검증
     // ClearStage 테이블에서 이전 스테이지 클리어 여부 확인하고 MasterData에서 스테이지 정보 가져오기
-    public async Task<Tuple<ErrorCode, List<Int64>, List<StageEnemy>>> SelectStageAsync(Int64 userId, Int64 stageCode)
+    public async Task<Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>> SelectStageAsync(Int64 userId, Int64 stageCode)
     {
         try
         {
             if (stageCode != 1)
             {
                 var hasQualified = await _queryFactory.Query("ClearStage").Where("UserId", userId)
-                                                .Where("StageCode", stageCode - 1).ExistsAsync();
+                                                      .Where("StageCode", stageCode - 1).ExistsAsync();
 
                 if (hasQualified == false)
                 {
-                    return new Tuple<ErrorCode, List<Int64>, List<StageEnemy>>(ErrorCode.SelectStageFailNotQualified, null, null);
+                    return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.SelectStageFailNotQualified, null, null);
                 }
             }
 
-            var stageItem = _masterDb.StageItemInfo.FindAll(i => i.Code == stageCode).Select(i => i.ItemCode).ToList();
+            var stageItem = _masterDb.StageItemInfo.FindAll(i => i.Code == stageCode);
             var stageEnemy = _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode);
 
-            return new Tuple<ErrorCode, List<Int64>, List<StageEnemy>>(ErrorCode.None, stageItem, stageEnemy);
+            return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.None, stageItem, stageEnemy);
         }
         catch (Exception ex)
         {
             _logger.ZLogError(ex, "SelectStage Exception");
             
-            return new Tuple<ErrorCode, List<Int64>, List<StageEnemy>>(ErrorCode.SelectStageFailException, null, null);
+            return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.SelectStageFailException, null, null);
         }
     }
 
@@ -78,7 +78,7 @@ public partial class GameDb : IGameDb
                 return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, itemInfo, obtainExp);
             }
 
-            // 병렬작업?
+            // 병렬작업...?
 
             return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.None, itemInfo, obtainExp);
         }
@@ -169,7 +169,7 @@ public partial class GameDb : IGameDb
             }
 
             userData = _queryFactory.Query("User_Data").Where("UserId", userId)
-                                        .FirstOrDefault<UserData>();
+                                    .FirstOrDefault<UserData>();
 
             var currentExp = userData.Exp + obtainExp;
             var currentLevel = userData.Level;
@@ -224,7 +224,7 @@ public partial class GameDb : IGameDb
         try
         {
             beforeClearData = await _queryFactory.Query("ClearStage").Where("UserId", userId)
-                                                     .Where("StageCode", stageCode).FirstOrDefaultAsync<ClearData>();
+                                                 .Where("StageCode", stageCode).FirstOrDefaultAsync<ClearData>();
 
             if (beforeClearData == null)
             {

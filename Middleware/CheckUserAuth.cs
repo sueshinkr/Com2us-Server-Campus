@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Org.BouncyCastle.Asn1.Ocsp;
 using WebAPIServer.DataClass;
 using WebAPIServer.DbOperations;
 using WebAPIServer.Log;
@@ -144,7 +145,7 @@ public class CheckUserAuth
         return true;
     }
 
-    public async Task<ErrorCode> SetJsonResponse(HttpContext context, ErrorCode errorCode)
+    public async Task SetJsonResponse(HttpContext context, ErrorCode errorCode)
     {
         try
         {
@@ -156,15 +157,11 @@ public class CheckUserAuth
             var bytes = Encoding.UTF8.GetBytes(JsonResponse);
             await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
 
-            _logger.ZLogError(LogManager.MakeEventId(errorCode), $"[CheckUserAuth] Error");
-            //_logger.ZLogError($"[CheckUserAuth] ErrorCode: {errorCode}");
-
-            return ErrorCode.None;
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), "CheckUserAuth Error");
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(LogManager.MakeEventId(ErrorCode.SetJsonFailException), ex, $"[CheckUserAuth] Error");
-            return ErrorCode.SetJsonFailException;
+            _logger.ZLogError(ex, "SetJsonResponse Exception");            
         }
     }
 }

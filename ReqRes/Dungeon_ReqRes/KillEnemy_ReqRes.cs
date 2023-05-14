@@ -11,7 +11,6 @@ public class KillEnemyRequest
     public double AppVersion { get; set; }
     public double MasterVersion { get; set; }
     public Int64 UserId { get; set; }
-    public Int64 StageCode { get; set; }
     public Int64 EnemyCode { get; set; }
 }
 

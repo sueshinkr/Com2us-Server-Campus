@@ -32,7 +32,7 @@ public partial class RedisDb : IRedisDb
     {
         try
         {
-            var key = "ChatLobbyList";
+            var key = "LobbyList";
             var redis = new RedisSortedSet<Int64>(_redisConn, key, null);
 
             if (await redis.ExistsAsync<RedisSortedSet<Int64>>() == true)
@@ -66,7 +66,8 @@ public partial class RedisDb : IRedisDb
         var user = new AuthUser
         {
             AuthToken = authToken,
-            AccountId = accountId
+            AccountId = accountId,
+            LastLogin = DateTime.Now
         };
 
         try

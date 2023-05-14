@@ -96,11 +96,12 @@ CREATE TABLE IF NOT EXISTS MasterDb.`StageItem`
 (
     Code INT NOT NULL COMMENT '스테이지 단계',
     ItemCode BIGINT NOT NULL COMMENT '파밍 가능 아이템 번호',
+    Count BIGINT NOT NULL COMMENT '파밍 가능 최대 개수',
     PRIMARY KEY (Code, ItemCode)
 ) COMMENT '스테이지 아이템';
 
 INSERT INTO StageItem
-VALUES (1, 1), (1, 2), (2, 2), (2, 3);
+VALUES (1, 1, 1500), (1, 2, 5), (2, 2, 10), (2, 3, 5);
 
 
 

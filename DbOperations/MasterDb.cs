@@ -43,7 +43,6 @@ public class MasterDb : IMasterDb
 
     public async Task<ErrorCode> Init()
     {
-        var aa = _dbConn.State;
         try
         {
             VersionDataInfo = await _queryFactory.Query("VersionData").FirstOrDefaultAsync<VersionData>();
@@ -65,7 +64,6 @@ public class MasterDb : IMasterDb
 
             return ErrorCode.MasterDbInitFailException;
         }
-
     }
 
     // 게임 버전 검증
@@ -83,7 +81,8 @@ public class MasterDb : IMasterDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"[VerifyVersionDataAsync] ErrorCode: {ErrorCode.VerifyVersionDataFailException}");
+            _logger.ZLogError(ex, "VerifyVersionData Exception");
+
             return ErrorCode.VerifyVersionDataFailException;
         }
     }

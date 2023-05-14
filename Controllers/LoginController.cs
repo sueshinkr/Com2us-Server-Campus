@@ -94,6 +94,7 @@ public class Login : ControllerBase
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = response.userData.UserId }, "Login Error");
 
             response.Result = errorCode;
+            return response;
         }
 
         // 채팅로비 접속

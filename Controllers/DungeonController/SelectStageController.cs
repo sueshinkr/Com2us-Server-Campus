@@ -35,7 +35,7 @@ public class SelectStage : ControllerBase
         if (errorCode != ErrorCode.None)
         {
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode }, "SelectStage Error");
-
+             
             response.Result = errorCode;
             return response;
         }

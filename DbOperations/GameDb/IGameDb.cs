@@ -22,7 +22,7 @@ public interface IGameDb : IDisposable
     public Task<Tuple<ErrorCode, UserItem>> EnhanceItemAsync(Int64 userId, Int64 ItemId);
 
     public Task<Tuple<ErrorCode, List<ClearData>>> LoadStageListAsync(Int64 userId);
-    public Task<Tuple<ErrorCode, List<Int64>, List<StageEnemy>>> SelectStageAsync(Int64 userId, Int64 stageCode);
+    public Task<Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>> SelectStageAsync(Int64 userId, Int64 stageCode);
     public Task<Tuple<ErrorCode, List<ItemInfo>, Int64>> ReceiveStageClearRewardAsync(Int64 userId, Int64 stageCode, List<ItemInfo> itemList);
     public Task<ErrorCode> UpdateStageClearDataAsync(Int64 userId, Int64 stageCode, Int64 clearRank, TimeSpan clearTime);
 }

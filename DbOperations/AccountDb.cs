@@ -24,7 +24,6 @@ public class AccountDb : IAccountDb
 
         var DbConnectString = configuration.GetSection("DBConnection")["AccountDb"];
         _dbConn = new MySqlConnection(DbConnectString);
-        _dbConn.Open();
 
         var compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new SqlKata.Execution.QueryFactory(_dbConn, compiler);
@@ -56,16 +55,16 @@ public class AccountDb : IAccountDb
 
             return new Tuple<ErrorCode, Int64>(ErrorCode.None, accountid);
         }
-        catch (MySqlException ex)
+        catch (Exception ex)
         {
-            if (ex.Number == 1062)
+            _logger.ZLogError(ex, "CreateAccount Exception");
+
+            if (ex is MySqlException mysqlEx && mysqlEx.Number == 1062)
             {
-                _logger.ZLogErrorWithPayload(LogManager.MakeEventId(ErrorCode.CreateAccountFailDuplicate), ex, new { Email = email, ErrorNum = ex.Number }, $"[CreateAccount] Error");
                 return new Tuple<ErrorCode, Int64>(ErrorCode.CreateAccountFailDuplicate, 0);
             }
             else
             {
-                _logger.ZLogErrorWithPayload(LogManager.MakeEventId(ErrorCode.CreateAccountFailException), ex, new { Email = email, ErrorNum = ex.Number }, $"[CreateAccount] Error");
                 return new Tuple<ErrorCode, Int64>(ErrorCode.CreateAccountFailException, 0);
             }
         }
@@ -80,14 +79,12 @@ public class AccountDb : IAccountDb
             var accountinfo = await _queryFactory.Query("Account").Where("Email", email).FirstOrDefaultAsync<Account>();
             if (accountinfo is null || accountinfo.AccountId == null)
             {
-                _logger.ZLogErrorWithPayload(LogManager.MakeEventId(ErrorCode.LoginFailUserNotExist), new { Email = email }, $"[VerifyAccount] Error");
                 return new Tuple<ErrorCode, Int64>(ErrorCode.LoginFailUserNotExist, 0);
             }
 
             var hashedPassword = Security.MakeHashedPassword(accountinfo.SaltValue, password);
             if (hashedPassword != accountinfo.HashedPassword)
             {
-                _logger.ZLogErrorWithPayload(LogManager.MakeEventId(ErrorCode.LoginFailPwNotMatch), new { Email = email }, $"[VerifyAccount] Error");
                 return new Tuple<ErrorCode, Int64>(ErrorCode.LoginFailPwNotMatch, 0);
             }
 
@@ -95,7 +92,8 @@ public class AccountDb : IAccountDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(ErrorCode.VerifyAccountFailException), ex, new { Email = email }, $"[VerifyAccount] Error");
+            _logger.ZLogError(ex, "VerifyAccount Exception");
+
             return new Tuple<ErrorCode, Int64>(ErrorCode.VerifyAccountFailException, 0);
         }
     }

@@ -27,10 +27,10 @@ public class ReceiveChat : ControllerBase
         var response = new ReceiveChatResponse();
         response.Result = ErrorCode.None;
 
-        (var errorCode, response.ChatHistory) = await _redisDb.ReceiveChatAsync(request.LobbyNum);
+        (var errorCode, response.ChatHistory) = await _redisDb.ReceiveChatAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, LobbyNum = request.LobbyNum }, "ReceiveChat Error");
+            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "ReceiveChat Error");
 
             response.Result = errorCode;
             return response;

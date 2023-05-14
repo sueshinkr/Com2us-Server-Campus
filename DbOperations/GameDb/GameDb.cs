@@ -188,7 +188,7 @@ public partial class GameDb : IGameDb
         try
         {
             userItem = await _queryFactory.Query("User_Item").Where("UserId", userId)
-                                          .GetAsync<UserItem>() as List<UserItem>;
+                                          .Where("IsDestroyed", false).GetAsync<UserItem>() as List<UserItem>;
 
             return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.None, userItem);
         }
