@@ -1,21 +1,20 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
+using WebAPIServer.ReqRes;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
-public class OpenMailBoxRequest
+public class OpenMailBoxRequest : UserAuthRequest
 {
-    public Int64 AccountId { get; set; }
-    public string AuthToken { get; set; }
-    public double AppVersion { get; set; }
-    public double MasterVersion { get; set; }
     public Int64 UserId { get; set; }
+
+    //[Range(1, double.PositiveInfinity)]
     public Int64 PageNumber { get; set; }
 }
 
 public class OpenMailBoxResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
     public List<MailData> mailData { get; set; }
 }

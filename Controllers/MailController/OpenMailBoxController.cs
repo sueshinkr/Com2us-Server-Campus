@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.DbOperations;
 using WebAPIServer.Log;
 using ZLogger;
@@ -27,7 +27,6 @@ public class OpenMailBox : ControllerBase
     public async Task<OpenMailBoxResponse> Post(OpenMailBoxRequest request)
     {
         var response = new OpenMailBoxResponse();
-        response.Result = ErrorCode.None;
 
         (var errorCode, response.mailData) = await _gameDb.LoadMailDataAsync(request.UserId, request.PageNumber);
         if (errorCode != ErrorCode.None)

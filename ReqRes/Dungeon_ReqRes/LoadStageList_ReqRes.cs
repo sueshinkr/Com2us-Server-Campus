@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
 public class LoadStageListRequest
 {
@@ -15,6 +15,6 @@ public class LoadStageListRequest
 
 public class LoadStageListResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
     public List<ClearData> ClearStage { get; set; }
 }

@@ -2,14 +2,10 @@
 using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
-public class PurchaseInAppProductRequest
+public class PurchaseInAppProductRequest : UserAuthRequest
 {
-    public Int64 AccountId { get; set; }
-    public string AuthToken { get; set; }
-    public double AppVersion { get; set; }
-    public double MasterVersion { get; set; }
     public Int64 UserId { get; set; }
     public Int64 PurchaseId { get; set; }
     public Int64 ProductCode { get; set; }
@@ -17,5 +13,5 @@ public class PurchaseInAppProductRequest
 
 public class PurchaseInAppProductResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
 }

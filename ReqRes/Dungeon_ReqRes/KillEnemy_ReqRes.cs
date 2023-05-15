@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
 public class KillEnemyRequest
 {
@@ -16,5 +16,5 @@ public class KillEnemyRequest
 
 public class KillEnemyResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
 }

@@ -16,8 +16,8 @@
     VerifyAccountFailException = 2003,
     VerifyVersionDataFailVersionNotMatch = 2004,
     VerifyVersionDataFailException = 2005,
-    CreateUserDataFailRedis = 2006,
-    CreateUserDataFailException = 2007,
+    CreateUserAuthFailRedis = 2006,
+    CreateUserAuthFailException = 2007,
     LoadNotificationFailNoUrl = 2008,
     LoadNotificationFailGetImageFromUrl = 2009,
     LoadNotificationFailException = 2010,
@@ -114,4 +114,10 @@
     SendChatFailException = 10011,
     ReceiveChatFailWrongUser = 10012,
     ReceiveChatFailException = 10013
+}
+
+public class DefaultSetting
+{
+    public Int64 MailsPerPage { get; set; }
+    public Int64 GeneratorId { get; set; }
 }

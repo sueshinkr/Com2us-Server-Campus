@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.DbOperations;
 using WebAPIServer.Log;
 using ZLogger;
@@ -27,7 +27,6 @@ public class ReadMail : ControllerBase
     public async Task<ReadMailResponse> Post(ReadMailRequest request)
     {
         var response = new ReadMailResponse();
-        response.Result = ErrorCode.None;
 
         (var errorCode, response.Content, response.Item) = await _gameDb.ReadMailAsync(request.MailId, request.UserId);
         if (errorCode != ErrorCode.None)

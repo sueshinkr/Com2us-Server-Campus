@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
 public class ClearStageRequest
 {
@@ -17,7 +17,7 @@ public class ClearStageRequest
 
 public class ClearStageResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
     public List<ItemInfo> itemInfo { get; set; }
     public Int64 ObtainExp { get; set; }
 }

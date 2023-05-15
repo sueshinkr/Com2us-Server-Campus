@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.DbOperations;
 using WebAPIServer.Log;
 using ZLogger;
@@ -27,7 +27,6 @@ public class DeleteMail : ControllerBase
     public async Task<DeleteMailResponse> Post(DeleteMailRequest request)
     {
         var response = new DeleteMailResponse();
-        response.Result = ErrorCode.None;
 
         var errorCode = await _gameDb.DeleteMailAsync(request.MailId, request.UserId);
         if (errorCode != ErrorCode.None)

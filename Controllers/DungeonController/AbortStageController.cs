@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.DbOperations;
 using WebAPIServer.Log;
 using ZLogger;

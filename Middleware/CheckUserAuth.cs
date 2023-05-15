@@ -78,7 +78,7 @@ public class CheckUserAuth
             }
 
             // User Regist 여부 확인
-            var userInfo = await _redisDb.GetUserDataAsync(accountId);
+            var userInfo = await _redisDb.GetUserAuthAsync(accountId);
             if (userInfo == null)
             {
                 await SetJsonResponse(context, ErrorCode.UserNotRegisted);
@@ -100,7 +100,7 @@ public class CheckUserAuth
                 return;
             }
 
-            context.Items[nameof(AuthUser)] = userInfo;
+            context.Items[nameof(UserAuth)] = userInfo;
         }
 
         context.Request.Body.Position = 0;
@@ -127,16 +127,18 @@ public class CheckUserAuth
             authToken = document.RootElement.GetProperty("AuthToken").GetString();
             appVersion = document.RootElement.GetProperty("AppVersion").GetDouble();
             masterVersion = document.RootElement.GetProperty("MasterVersion").GetDouble();
+
             return false;
         }
         catch
         {
             accountId = 0; authToken = ""; appVersion = 0; masterVersion = 0;
+
             return true;
         }
     }
 
-    public bool IsInvalidUserAuthToken(HttpContext context, AuthUser userInfo, string authToken)
+    public bool IsInvalidUserAuthToken(HttpContext context, UserAuth userInfo, string authToken)
     {
         if (string.CompareOrdinal(userInfo.AuthToken, authToken) == 0)
         {

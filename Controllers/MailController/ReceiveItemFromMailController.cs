@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.DbOperations;
 using WebAPIServer.Log;
 using ZLogger;
@@ -27,7 +27,6 @@ public class ReceiveItemFromMail : ControllerBase
     public async Task<ReceiveItemFromMailResponse> Post(ReceiveItemFromMailRequest request)
     {
         var response = new ReceiveItemFromMailResponse();
-        response.Result = ErrorCode.None;
 
         (var errorCode, response.itemInfo) = await _gameDb.ReceiveMailItemAsync(request.MailId, request.UserId);
         if (errorCode != ErrorCode.None)

@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
 public class ReceiveChatRequest
 {
@@ -15,6 +15,6 @@ public class ReceiveChatRequest
 
 public class ReceiveChatResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
     public List<string> ChatHistory { get; set; }
 }

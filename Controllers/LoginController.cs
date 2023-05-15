@@ -1,5 +1,5 @@
 ﻿using WebAPIServer.DbOperations;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Extensions;
@@ -57,7 +57,7 @@ public class Login : ControllerBase
 
         // 인증키 생성
         response.Authtoken = Security.RandomString(25);
-        errorCode = await _redisDb.CreateUserDataAsync(request.Email, response.Authtoken, accountId);
+        errorCode = await _redisDb.CreateUserAuthAsync(request.Email, response.Authtoken, accountId);
         if (errorCode != ErrorCode.None)
         {
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "Login Error");

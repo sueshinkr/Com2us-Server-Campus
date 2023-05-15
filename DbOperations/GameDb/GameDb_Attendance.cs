@@ -1,6 +1,8 @@
 ﻿using System;
+using Org.BouncyCastle.Asn1.Pkcs;
 using SqlKata.Execution;
 using WebAPIServer.DataClass;
+using WebAPIServer.Log;
 using ZLogger;
 
 namespace WebAPIServer.DbOperations;
@@ -34,9 +36,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "LoadAttendanceData Exception");
+            var errorCode = ErrorCode.LoadAttendanceDataFailException;
 
-            return new Tuple<ErrorCode, Int64, bool>(ErrorCode.LoadAttendanceDataFailException, 0, false);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "LoadAttendanceData Exception");
+
+            return new Tuple<ErrorCode, Int64, bool>(errorCode, 0, false);
         }
     }
 
@@ -99,7 +103,9 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "HandleNewAttendance Exception");
+            var errorCode = ErrorCode.HandleNewAttendanceFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "HandleNewAttendance Exception");
 
             return ErrorCode.HandleNewAttendanceFailException;
         }
@@ -145,9 +151,11 @@ public partial class GameDb : IGameDb
             await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
             await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
 
-            _logger.ZLogError(ex, "SendMailAttendanceReward Exception");
+            var errorCode = ErrorCode.SendMailAttendanceRewardFailException;
 
-            return ErrorCode.SendMailAttendanceRewardFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "SendMailAttendanceReward Exception");
+
+            return errorCode;
         }
     }
 

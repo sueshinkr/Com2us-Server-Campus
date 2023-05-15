@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
 public class ObtainItemRequest
 {
@@ -17,5 +17,5 @@ public class ObtainItemRequest
 
 public class ObtainItemResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
 }

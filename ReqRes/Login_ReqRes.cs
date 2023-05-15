@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
 public class LoginRequest
 {
@@ -24,7 +24,7 @@ public class LoginRequest
 
 public class LoginResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
     public string Authtoken { get; set; }
     public UserData userData { get; set; }
     public List<UserItem> userItem { get; set; }

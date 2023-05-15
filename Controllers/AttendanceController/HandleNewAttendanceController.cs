@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DbOperations;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
@@ -27,8 +27,7 @@ public class HandleNewAttendance : ControllerBase
     public async Task<HandleNewAttendanceResponse> Post(HandleNewAttendanceRequest request)
     {
         var response = new HandleNewAttendanceResponse();
-        response.Result = ErrorCode.None;
-
+        
         var errorCode = await _gameDb.HandleNewAttendanceAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {

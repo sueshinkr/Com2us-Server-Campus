@@ -3,6 +3,7 @@ using SqlKata.Execution;
 using MySqlConnector;
 using WebAPIServer.DataClass;
 using ZLogger;
+using WebAPIServer.Log;
 
 namespace WebAPIServer.DbOperations;
 
@@ -37,16 +38,20 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "PurchaseInAppProduct Exception");
+            var errorCode = new ErrorCode();
 
             if (ex is MySqlException mysqlEx && mysqlEx.Number == 1062)
             {
-                return ErrorCode.PurchaseInAppProductFailDuplicate;
+                errorCode = ErrorCode.PurchaseInAppProductFailDuplicate;
             }
             else
             {
-                return ErrorCode.PurchaseInAppProductFailException;
+                errorCode = ErrorCode.PurchaseInAppProductFailException;
             }
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "PurchaseInAppProduct Exception");
+
+            return errorCode;
         }
     }
 
@@ -91,9 +96,11 @@ public partial class GameDb : IGameDb
             await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
             await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
 
-            _logger.ZLogError(ex, "SendMailInAppProduct Exception");
+            var errorCode = ErrorCode.SendMailInAppProductFailException;
 
-            return ErrorCode.SendMailInAppProductFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "SendMailInAppProduct Exception");
+
+            return errorCode;
         }
     }
 

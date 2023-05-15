@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
 public class CreateAccountRequest
 {
@@ -19,6 +19,6 @@ public class CreateAccountRequest
 
 public class CreateAccountResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
     public Int64 AccountId { get; set; }
 }

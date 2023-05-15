@@ -14,8 +14,7 @@ public partial class GameDb : IGameDb
     public async Task<Tuple<ErrorCode, List<MailData>>> LoadMailDataAsync(Int64 userId, Int64 pageNumber)
     {
         var mailData = new List<MailData>();
-        var mailsPerPage = int.Parse(_configuration.GetSection("MailSetting")["mailsPerPage"]);
-        // 일단 나중에 처리 ...
+        var mailsPerPage = _defaultSetting.MailsPerPage;
 
         if (pageNumber < 1)
         {
@@ -25,16 +24,18 @@ public partial class GameDb : IGameDb
         try
         {
             mailData = await _queryFactory.Query("Mail_Data").Where("UserId", userId).Where("IsDeleted", false)
-                                          .OrderByDesc("MailId").Offset((pageNumber - 1) * mailsPerPage).Limit(mailsPerPage)
+                                          .OrderByDesc("MailId").Offset((pageNumber - 1) * mailsPerPage).Limit((int)mailsPerPage)
                                           .GetAsync<MailData>() as List<MailData>;
 
             return new Tuple<ErrorCode, List<MailData>>(ErrorCode.None, mailData);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "LoadMailData Exception");
+            var errorCode = ErrorCode.LoadMailDataFailException;
 
-            return new Tuple<ErrorCode, List<MailData>>(ErrorCode.LoadMailDataFailException, mailData);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "LoadMailData Exception");
+
+            return new Tuple<ErrorCode, List<MailData>>(errorCode, mailData);
         }
     }
 
@@ -64,9 +65,15 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "ReadMailFail Exception");
+            // 롤백
+            await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                               .UpdateAsync(new { IsRead = false });
 
-            return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.ReadMailFailException, null, null);
+            var errorCode = ErrorCode.ReadMailFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReadMailFail Exception");
+
+            return new Tuple<ErrorCode, string, List<MailItem>>(errorCode, null, null);
         }
     }
 
@@ -75,6 +82,7 @@ public partial class GameDb : IGameDb
     public async Task<Tuple<ErrorCode, List<ItemInfo>>> ReceiveMailItemAsync(Int64 mailId, Int64 userId)
     {
         var itemInfo = new List<ItemInfo>();
+        var errorCode = new ErrorCode();
 
         try
         {
@@ -92,20 +100,25 @@ public partial class GameDb : IGameDb
 
             foreach (MailItem item in mailItem)
             {
-                (var errorCode, var newItem) = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, item.ItemId);
+                (errorCode, var newItem) = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, item.ItemId);
 
                 if (errorCode != ErrorCode.None)
                 {
-                    // 롤백
-                    for (int i = 0; i <= mailItem.IndexOf(item); i++)
-                    {
-                        await DeleteUserItemAsync(userId, mailItem[i].ItemId, mailItem[i].ItemCount);
-                    }
-
-                    return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveMailItemFailInsertItem, null);
+                    break;
                 }
 
                 itemInfo.Add(newItem);
+            }
+
+            if (errorCode != ErrorCode.None)
+            {
+                // 롤백
+                foreach (ItemInfo item in itemInfo)
+                {
+                    await DeleteUserItemAsync(userId, item.ItemId, item.ItemCount);
+                }
+
+                return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveMailItemFailInsertItem, null);
             }
 
             await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
@@ -118,9 +131,23 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "ReceiveMailItem Exception");
+            //롤백
+            foreach(ItemInfo item in itemInfo)
+            {
+                await DeleteUserItemAsync(userId, item.ItemId, item.ItemCount);
+            }
 
-            return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveMailItemFailException, itemInfo);
+            await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
+                               .UpdateAsync(new { IsReceived = false });
+
+            await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                               .UpdateAsync(new { HasItem = true });
+
+            errorCode = ErrorCode.ReceiveMailItemFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReceiveMailItem Exception");
+
+            return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, itemInfo);
         }
     }
 
@@ -148,9 +175,15 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "DeleteMail Exception");
+            //롤백
+            await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                               .UpdateAsync(new { IsDeleted = false });
 
-            return ErrorCode.DeleteMailFailException;
+            var errorCode = ErrorCode.DeleteMailFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "DeleteMail Exception");
+
+            return errorCode;
         }
     }
 
@@ -176,9 +209,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "InsertItemIntoMail Exception");
+            var errorCode = ErrorCode.InsertItemIntoMailFailException;
 
-            return ErrorCode.InsertItemIntoMailFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "InsertItemIntoMail Exception");
+
+            return errorCode;
         }
     }
 }

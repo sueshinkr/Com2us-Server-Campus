@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using SqlKata.Execution;
 using StackExchange.Redis;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using WebAPIServer.Log;
 
 namespace WebAPIServer.DbOperations;
 
@@ -33,37 +34,40 @@ public partial class RedisDb : IRedisDb
         try
         {
             var key = "LobbyList";
-            var redis = new RedisSortedSet<Int64>(_redisConn, key, null);
+            var lobbyListRedis = new RedisSortedSet<Int64>(_redisConn, key, null);
 
-            if (await redis.ExistsAsync<RedisSortedSet<Int64>>() == true)
+            if (await lobbyListRedis.ExistsAsync<RedisSortedSet<Int64>>() == true)
             {
                 return ErrorCode.None;
             }
 
             var lobbyList = new List<RedisSortedSetEntry<Int64>>();
+
             for (int i = 1; i <= 100; i++)
             {
                 lobbyList.Add(new RedisSortedSetEntry<Int64>(i, 0));
             }
 
-            await redis.AddAsync(lobbyList);
+            await lobbyListRedis.AddAsync(lobbyList);
 
             return ErrorCode.None;
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "Redis Init Exception");
+            var errorCode = ErrorCode.RedisInitFailException;
 
-            return ErrorCode.RedisInitFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "Redis Init Exception");
+
+            return errorCode;
         }
     }
 
     // 유저 정보 생성
     // accountId로 키밸류 추가
-    public async Task<ErrorCode> CreateUserDataAsync(string email, string authToken, Int64 accountId)
+    public async Task<ErrorCode> CreateUserAuthAsync(string email, string authToken, Int64 accountId)
     {
         var uid = "UID_" + accountId;
-        var user = new AuthUser
+        var user = new UserAuth
         {
             AuthToken = authToken,
             AccountId = accountId,
@@ -72,41 +76,48 @@ public partial class RedisDb : IRedisDb
 
         try
         {
-            var redis = new RedisString<AuthUser>(_redisConn, uid, LoginTimeSpan());
-            if (await redis.SetAsync(user, LoginTimeSpan()) == false)
+            var userAuthRedis = new RedisString<UserAuth>(_redisConn, uid, LoginTimeSpan());
+
+            if (await userAuthRedis.SetAsync(user, LoginTimeSpan()) == false)
             {
-                return ErrorCode.CreateUserDataFailRedis;
+                return ErrorCode.CreateUserAuthFailRedis;
             }
 
             return ErrorCode.None;
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "CreateUserData Exception");
+            var errorCode = ErrorCode.CreateUserAuthFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CreateUserAuth Exception");
             
-            return ErrorCode.CreateUserDataFailException;
+            return errorCode;
         }
     }
 
     // 유저 정보 가져오기
     // accountId 유저 정보 가져옴
-    public async Task<AuthUser> GetUserDataAsync(Int64 accountid)
+    public async Task<UserAuth> GetUserAuthAsync(Int64 accountid)
     {
         var uid = "UID_" + accountid;
 
         try
         {
-            var redis = new RedisString<AuthUser>(_redisConn, uid, null);
-            var user = await redis.GetAsync();
-            if (!user.HasValue)
+            var userAuthRedis = new RedisString<UserAuth>(_redisConn, uid, null);
+            var userAuthResult = await userAuthRedis.GetAsync();
+
+            if (!userAuthResult.HasValue)
             {
                 return null;
             }
-            return (user.Value);
+
+            var userAuth = userAuthResult.Value;
+
+            return (userAuth);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "GetUserData Exception");
+            _logger.ZLogError(ex, "GetUserAuth Exception");
             
             return null;
         }
@@ -118,8 +129,9 @@ public partial class RedisDb : IRedisDb
     {
         try
         {
-            var redis = new RedisString<AuthUser>(_redisConn, userLockKey, NxKeyTimeSpan());
-            if (await redis.SetAsync(new AuthUser { }, NxKeyTimeSpan(), StackExchange.Redis.When.NotExists) == false)
+            var lockRedis = new RedisString<UserAuth>(_redisConn, userLockKey, NxKeyTimeSpan());
+
+            if (await lockRedis.SetAsync(new UserAuth { }, NxKeyTimeSpan(), StackExchange.Redis.When.NotExists) == false)
             {
                 return true;
             }
@@ -142,9 +154,9 @@ public partial class RedisDb : IRedisDb
 
         try
         {
-            var redis = new RedisString<AuthUser>(_redisConn, userLockKey, null);
-            var redisResult = await redis.DeleteAsync();
-            return redisResult;
+            var lockRedis = new RedisString<UserAuth>(_redisConn, userLockKey, null);
+            var lockRedisResult = await lockRedis.DeleteAsync();
+            return lockRedisResult;
         }
         catch
         {
@@ -153,29 +165,32 @@ public partial class RedisDb : IRedisDb
     }
 
     // 공지 가져오기
-    // 이게 맞을까...?
+    // 공지는 Redis에 URL 형태로 저장되어있다고 가정
     public async Task<Tuple<ErrorCode, string>> LoadNotification()
     {
         var notificationUrl = new string("");
 
         try
         {
-            var redis = new RedisString<string>(_redisConn, "notification", null);
-            var redisResult = await redis.GetAsync();
-            notificationUrl = redisResult.Value;
+            var notificationUrlRedis = new RedisString<string>(_redisConn, "notification", null);
+            var notificationUrlRedisResult = await notificationUrlRedis.GetAsync();
 
-            if (notificationUrl == null)
+            if (notificationUrlRedisResult.HasValue == false)
             {
                 return new Tuple<ErrorCode, string>(ErrorCode.LoadNotificationFailNoUrl, notificationUrl);
             }
+
+            notificationUrl = notificationUrlRedisResult.Value;
 
             return new Tuple<ErrorCode, string>(ErrorCode.None, notificationUrl);
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "LoadNotification Exception");
+            var errorCode = ErrorCode.LoadNotificationFailException;
 
-            return new Tuple<ErrorCode, string>(ErrorCode.LoadNotificationFailException, notificationUrl);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "LoadNotification Exception");
+
+            return new Tuple<ErrorCode, string>(errorCode, notificationUrl);
         }
     }
 

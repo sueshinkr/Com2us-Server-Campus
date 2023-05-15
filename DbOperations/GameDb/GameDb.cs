@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using MySqlConnector;
 using SqlKata.Execution;
 using WebAPIServer.DataClass;
-
+using WebAPIServer.Log;
 using ZLogger;
 
 namespace WebAPIServer.DbOperations;
@@ -16,16 +16,18 @@ public partial class GameDb : IGameDb
     readonly IMasterDb _masterDb;
     readonly IIdGenerator<long> _idGenerator;
     readonly IConfiguration _configuration;
+    readonly DefaultSetting _defaultSetting;
 
     IDbConnection _dbConn;
     QueryFactory _queryFactory;
 
-    public GameDb(ILogger<GameDb> logger, IMasterDb masterDb, IIdGenerator<long> idGenerator, IConfiguration configuration)
+    public GameDb(ILogger<GameDb> logger, IMasterDb masterDb, IIdGenerator<long> idGenerator, IConfiguration configuration, DefaultSetting defaultSetting)
     {
         _logger = logger;
         _masterDb = masterDb;
         _idGenerator = idGenerator;
         _configuration = configuration;
+        _defaultSetting = defaultSetting;
 
         var DbConnectString = _configuration.GetSection("DBConnection")["GameDb"];
         _dbConn = new MySqlConnection(DbConnectString);
@@ -36,7 +38,8 @@ public partial class GameDb : IGameDb
 
     public void Dispose()
     {
-        _dbConn.Close();
+        _queryFactory.Dispose();
+        _dbConn.Dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -71,9 +74,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "CreateBasicData Exception");
+            var errorCode = ErrorCode.CreateBasicDataFailException;
 
-            return ErrorCode.CreateBasicDataFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CreateBasicData Exception");
+
+            return errorCode;
         }
     }
 
@@ -118,9 +123,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "InsertUserItem Exception");
+            var errorCode = ErrorCode.InsertItemFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "InsertUserItem Exception");          
             
-            return new Tuple<ErrorCode, ItemInfo>(ErrorCode.InsertItemFailException, itemInfo);
+            return new Tuple<ErrorCode, ItemInfo>(errorCode, itemInfo);
         }
     }
 
@@ -152,7 +159,9 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "DeleteUserItem Exception");
+            var errorCode = ErrorCode.DeleteItemFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "DeleteUserItem Exception");
             
             return ErrorCode.DeleteItemFailException;
         }
@@ -173,9 +182,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "DataLoading Exception");
+            var errorCode = ErrorCode.UserDataLoadingFailException;
 
-            return new Tuple<ErrorCode, UserData>(ErrorCode.UserDataLoadingFailException, userData);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "UserDataLoading Exception");
+
+            return new Tuple<ErrorCode, UserData>(errorCode, userData);
         }
     }
 
@@ -194,9 +205,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "UserItemLoadingAsync Exception");
+            var errorCode = ErrorCode.UserItemLoadingFailException;
 
-            return new Tuple<ErrorCode, List<UserItem>>(ErrorCode.UserItemLoadingFailException, userItem);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "UserItemLoading Exception");
+
+            return new Tuple<ErrorCode, List<UserItem>>(errorCode, userItem);
         }
     } 
 }

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DbOperations;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
@@ -27,8 +27,7 @@ public class OpenAttendanceSheet : ControllerBase
     public async Task<OpenAttendanceSheetResponse> Post(OpenAttendanceSheetRequest request)
     {
         var response = new OpenAttendanceSheetResponse();
-        response.Result = ErrorCode.None;
-
+        
         (var errorCode, response.attendanceCount, response.IsNewAttendance) = await _gameDb.LoadAttendanceDataAsync(request.UserId);
 
         if (errorCode != ErrorCode.None)
@@ -38,8 +37,6 @@ public class OpenAttendanceSheet : ControllerBase
             response.Result = errorCode;
             return response;
         }
-
-        response.attendanceReward = _masterDb.AttendanceRewardInfo;
 
         return response;
     }

@@ -31,7 +31,8 @@ public class AccountDb : IAccountDb
 
     public void Dispose()
     {
-        _dbConn.Close();
+        _queryFactory.Dispose();
+        _dbConn.Dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -57,16 +58,20 @@ public class AccountDb : IAccountDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "CreateAccount Exception");
+            var errorCode = new ErrorCode();
 
             if (ex is MySqlException mysqlEx && mysqlEx.Number == 1062)
             {
-                return new Tuple<ErrorCode, Int64>(ErrorCode.CreateAccountFailDuplicate, 0);
+                errorCode = ErrorCode.CreateAccountFailDuplicate;
             }
             else
             {
-                return new Tuple<ErrorCode, Int64>(ErrorCode.CreateAccountFailException, 0);
+                errorCode = ErrorCode.CreateAccountFailException;
             }
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CreateAccount Exception");
+
+            return new Tuple<ErrorCode, Int64>(errorCode, 0);
         }
     }
 
@@ -92,9 +97,11 @@ public class AccountDb : IAccountDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "VerifyAccount Exception");
+            var errorCode = ErrorCode.VerifyAccountFailException;
 
-            return new Tuple<ErrorCode, Int64>(ErrorCode.VerifyAccountFailException, 0);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "VerifyAccount Exception");
+
+            return new Tuple<ErrorCode, Int64>(errorCode, 0);
         }
     }
 

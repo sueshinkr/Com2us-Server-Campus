@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
 
-namespace WebAPIServer.RequestResponse;
+namespace WebAPIServer.ReqRes;
 
 public class SelectStageRequest
 {
@@ -16,7 +16,7 @@ public class SelectStageRequest
 
 public class SelectStageResponse
 {
-    public ErrorCode Result { get; set; }
+    public ErrorCode Result { get; set; } = ErrorCode.None;
     public List<StageItem> stageItem { get; set; }
     public List<StageEnemy> stageEnemy { get; set; }
 }

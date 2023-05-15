@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DbOperations;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;

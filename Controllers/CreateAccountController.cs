@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DbOperations;
-using WebAPIServer.RequestResponse;
+using WebAPIServer.ReqRes;
 using WebAPIServer.Log;
 using Microsoft.AspNetCore.Mvc;
 using SqlKata.Execution;
@@ -27,7 +27,6 @@ public class CreateAccount: ControllerBase
     public async Task<CreateAccountResponse> Post(CreateAccountRequest request)
     {
         var response = new CreateAccountResponse();
-        response.Result = ErrorCode.None;
 
         // 계정 정보 생성
         // Account 테이블에 계정 추가 
@@ -37,7 +36,6 @@ public class CreateAccount: ControllerBase
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "CreateAccount Error");
 
             response.Result = errorCode;
-            response.AccountId = 0;
             return response;
         }
 
@@ -49,7 +47,6 @@ public class CreateAccount: ControllerBase
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "CreateAccount Error");
 
             response.Result = errorCode;
-            response.AccountId = 0;
             return response;
         }
 

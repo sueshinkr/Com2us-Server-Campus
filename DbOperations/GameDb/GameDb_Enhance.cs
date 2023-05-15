@@ -3,6 +3,7 @@ using SqlKata.Execution;
 using MySqlConnector;
 using WebAPIServer.DataClass;
 using ZLogger;
+using WebAPIServer.Log;
 
 namespace WebAPIServer.DbOperations;
 
@@ -63,12 +64,16 @@ public partial class GameDb : IGameDb
                                    IsDestroyed = itemData.IsDestroyed
                                });
 
-            _logger.ZLogError(ex, "EnhanceItem Exception");
+            var errorCode = ErrorCode.EnhanceItemFailException;
 
-            return new Tuple<ErrorCode, UserItem>(ErrorCode.EnhanceItemFailException, null);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "EnhanceItem Exception");
+
+            return new Tuple<ErrorCode, UserItem>(errorCode, null);
         }
     }
 
+    // 강화 가능 여부 체크
+    // User_Item, User_Data 테이블 데이터 검증
     private async Task<Tuple<ErrorCode, UserItem, Item>> CheckEnhanceableAsync(Int64 userId, Int64 itemId)
     {
         try
@@ -93,9 +98,10 @@ public partial class GameDb : IGameDb
                 return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailAlreadyMax, null, null);
             }
 
+            var enhanceCost = (itemData.EnhanceCount + 1) * 10;
             var hasEnoughMoney = await _queryFactory.Query("User_Data").Where("UserId", userId)
-                                        .Where("Money", ">", (itemData.EnhanceCount + 1) * 10)
-                                        .DecrementAsync("Money", (int)(itemData.EnhanceCount + 1) * 10);
+                                        .Where("Money", ">", enhanceCost)
+                                        .DecrementAsync("Money", (int)enhanceCost);
 
             if (hasEnoughMoney == 0)
             {
@@ -106,12 +112,15 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "CheckEnhanceable Exception");
+            var errorCode = ErrorCode.CheckEnhanceableFailException;
 
-            return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailException, null, null);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CheckEnhanceable Exception");
+
+            return new Tuple<ErrorCode, UserItem, Item>(errorCode, null, null);
         }
     }
 
+    // 강화 확률 실행
     private bool DetermineEnhancementResult()
     {
         var random = new Random();
@@ -120,6 +129,7 @@ public partial class GameDb : IGameDb
         return isSuccess;
     }
 
+    // 강화 성공시 작업
     private async Task<ErrorCode> HandleSuccessfulEnhancementAsync(Int64 itemId, UserItem itemData, Int64 itemAttribute)
     {
         try
@@ -149,12 +159,15 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "HandleSuccessfulEnhancement Exception");
+            var errorCode = ErrorCode.HandleSuccessfulEnhancementFailException;
 
-            return ErrorCode.HandleSuccessfulEnhancementFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "HandleSuccessfulEnhancement Exception");
+
+            return errorCode;
         }
     }
 
+    // 강화 실패시 작업
     private async Task<ErrorCode> HandleFailedEnhancementAsync(Int64 itemId, UserItem itemData)
     {
         try
@@ -168,10 +181,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "HandleFailedEnhancement Exception");
+            var errorCode = ErrorCode.HandleFailedEnhancementFailException;
 
-            return ErrorCode.HandleFailedEnhancementFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "HandleFailedEnhancement Exception");
 
+            return errorCode;
         }
     }
 }
