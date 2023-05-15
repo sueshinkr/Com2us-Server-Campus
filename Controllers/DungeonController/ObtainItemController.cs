@@ -27,7 +27,6 @@ public class ObtainItem : ControllerBase
     public async Task<ObtainItemResponse> Post(ObtainItemRequest request)
     {
         var response = new ObtainItemResponse();
-        response.Result = ErrorCode.None;
 
         var errorCode = await _redisDb.ObtainItemAsync(request.UserId, request.ItemCode, request.ItemCount);
         if (errorCode != ErrorCode.None)

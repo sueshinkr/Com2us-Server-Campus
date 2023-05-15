@@ -25,7 +25,6 @@ public class ReceiveChat : ControllerBase
     public async Task<ReceiveChatResponse> Post(ReceiveChatRequest request)
     {
         var response = new ReceiveChatResponse();
-        response.Result = ErrorCode.None;
 
         (var errorCode, response.ChatHistory) = await _redisDb.ReceiveChatAsync(request.UserId);
         if (errorCode != ErrorCode.None)

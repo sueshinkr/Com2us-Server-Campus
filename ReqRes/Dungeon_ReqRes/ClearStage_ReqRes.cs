@@ -4,12 +4,8 @@ using WebAPIServer.DataClass;
 
 namespace WebAPIServer.ReqRes;
 
-public class ClearStageRequest
+public class ClearStageRequest : UserAuthRequest
 {
-    public Int64 AccountId { get; set; }
-    public string AuthToken { get; set; }
-    public double AppVersion { get; set; }
-    public double MasterVersion { get; set; }
     public Int64 UserId { get; set; }
     public Int64 ClearRank { get; set; }
     public TimeSpan ClearTime { get; set; }

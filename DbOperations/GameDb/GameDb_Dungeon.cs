@@ -3,6 +3,7 @@ using SqlKata.Execution;
 using MySqlConnector;
 using WebAPIServer.DataClass;
 using ZLogger;
+using WebAPIServer.Log;
 
 namespace WebAPIServer.DbOperations;
 
@@ -21,9 +22,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "LoadStageList Exception");
+            var errorCode = ErrorCode.LoadLoadStageListFailException;
 
-            return new Tuple<ErrorCode, List<ClearData>>(ErrorCode.LoadLoadStageListFailException, null);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "LoadStageList Exception");
+
+            return new Tuple<ErrorCode, List<ClearData>>(errorCode, null);
         }
     }
 
@@ -51,9 +54,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "SelectStage Exception");
-            
-            return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.SelectStageFailException, null, null);
+            var errorCode = ErrorCode.SelectStageFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "SelectStage Exception");
+
+            return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(errorCode, null, null);
         }
     }
 
@@ -84,9 +89,11 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "ReceiveStageClearReward Exception");
+            var errorCode = ErrorCode.ReceiveStageClearRewardFailException;
 
-            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.ReceiveStageClearRewardFailException, itemInfo, obtainExp);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReceiveStageClearReward Exception");
+
+            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, itemInfo, obtainExp);
         }
     }
 
@@ -148,9 +155,11 @@ public partial class GameDb : IGameDb
                 await DeleteUserItemAsync(userId, itemInfo[i].ItemId, itemInfo[i].ItemCount);
             }
 
-            _logger.ZLogError(ex, "ReceiveItemReward Exception");
+            var errorCode = ErrorCode.ReceiveItemRewardFailException;
 
-            return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveItemRewardFailException, null);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReceiveItemReward Exception");
+
+            return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, null);
         }
     }
 
@@ -209,9 +218,11 @@ public partial class GameDb : IGameDb
                                    Exp = userData.Exp
                                });
 
-            _logger.ZLogError(ex, "ReceiveExpReward Exception");
+            var errorCode = ErrorCode.ReceiveExpRewardFailException;
 
-            return new Tuple<ErrorCode, Int64>(ErrorCode.ReceiveExpRewardFailException, 0);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReceiveExpReward Exception");
+
+            return new Tuple<ErrorCode, Int64>(errorCode, 0);
         }
     }
     
@@ -271,11 +282,11 @@ public partial class GameDb : IGameDb
                                    });
             }
 
-            _logger.ZLogError(ex, "UpdateStageClearData Exception");
+            var errorCode = ErrorCode.UpdateStageClearDataFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "UpdateStageClearData Exception");
             
-            return ErrorCode.UpdateStageClearDataFailException;
+            return errorCode;
         }
     }
-
-    
 }

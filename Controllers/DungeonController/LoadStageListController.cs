@@ -27,7 +27,6 @@ public class LoadStageList : ControllerBase
     public async Task<LoadStageListResponse> Post(LoadStageListRequest request)
     {
         var response = new LoadStageListResponse();
-        response.Result = ErrorCode.None;
 
         (var errorCode, response.ClearStage) = await _gameDb.LoadStageListAsync(request.UserId);
         if (errorCode != ErrorCode.None)

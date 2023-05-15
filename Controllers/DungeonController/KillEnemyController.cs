@@ -27,7 +27,6 @@ public class KillEnemy : ControllerBase
     public async Task<KillEnemyResponse> Post(KillEnemyRequest request)
     {
         var response = new KillEnemyResponse();
-        response.Result = ErrorCode.None;
 
         var errorCode = await _redisDb.KillEnemyAsync(request.UserId, request.EnemyCode);
         if (errorCode != ErrorCode.None)

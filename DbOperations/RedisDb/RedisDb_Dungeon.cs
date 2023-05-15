@@ -1,7 +1,9 @@
 ﻿using System;
 using CloudStructures.Structures;
+using Org.BouncyCastle.Asn1.Pkcs;
 using StackExchange.Redis;
 using WebAPIServer.DataClass;
+using WebAPIServer.Log;
 using ZLogger;
 
 namespace WebAPIServer.DbOperations;
@@ -12,8 +14,8 @@ public partial class RedisDb : IRedisDb
     // UserId로 키 생성
     public async Task<ErrorCode> CreateStageProgressDataAsync(Int64 userId, Int64 stageCode)
     {
-        var stageItemKey = "Stage_" + userId + "_Item";
-        var stageEnemyKey = "Stage_" + userId + "_Enemy";
+        var stageItemKey = "User_" + userId + "_StageItem";
+        var stageEnemyKey = "User_" + userId + "_StageEnemy";
 
         try
         {
@@ -36,6 +38,7 @@ public partial class RedisDb : IRedisDb
 
                 if (await itemRedis.SetAsync(item) == false || await enemyRedis.SetAsync(enemy) == false)
                 {
+                    await DeleteStageProgressDataAsync(userId);
                     return ErrorCode.CreateStageProgressDataFailRedis;
                 }
 
@@ -44,9 +47,11 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "CreateStageProgressData Exception");
+            var errorCode = ErrorCode.CreateStageProgressDataFailException;
 
-            return ErrorCode.CreateStageProgressDataFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CreateStageProgressData Exception");
+
+            return errorCode;
         }
     }
 
@@ -54,8 +59,8 @@ public partial class RedisDb : IRedisDb
     // UserId에 해당하는 키 제거
     public async Task<ErrorCode> DeleteStageProgressDataAsync(Int64 userId)
     {
-        var stageItemKey = "Stage_" + userId + "_Item";
-        var stageEnemyKey = "Stage_" + userId + "_Enemy";
+        var stageItemKey = "User_" + userId + "_StageItem";
+        var stageEnemyKey = "User_" + userId + "_StageEnemy";
 
         try
         {
@@ -71,9 +76,11 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "DeleteStageProgressData Exception");
-           
-            return ErrorCode.DeleteStageProgressDataFailException;
+            var errorCode = ErrorCode.DeleteStageProgressDataFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "DeleteStageProgressData Exception");
+
+            return errorCode;
         }
     }
 
@@ -81,7 +88,7 @@ public partial class RedisDb : IRedisDb
     // 유저의 stageItemKey에 아이템 추가
     public async Task<ErrorCode> ObtainItemAsync(Int64 userId, Int64 itemCode, Int64 itemCount)
     {
-        var stageItemKey = "Stage_" + userId + "_Item";
+        var stageItemKey = "User_" + userId + "_StageItem";
 
         try
         {
@@ -121,9 +128,11 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "ObtainItem Exception");
-            
-            return ErrorCode.ObtainItemFailException;
+            var errorCode = ErrorCode.ObtainItemFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ObtainItem Exception");
+
+            return errorCode;
         }
     }
 
@@ -131,7 +140,7 @@ public partial class RedisDb : IRedisDb
     // 유저의 stageEnemyKey에 적 추가
     public async Task<ErrorCode> KillEnemyAsync(Int64 userId,Int64 enemyCode)
     {
-        var stageEnemyKey = "Stage_" + userId + "_Enemy";
+        var stageEnemyKey = "User_" + userId + "_StageEnemy";
 
         try
         {
@@ -171,9 +180,11 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "KillEnemy Exception");
+            var errorCode = ErrorCode.KillEnemyFailException;
 
-            return ErrorCode.KillEnemyFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "KillEnemy Exception");
+
+            return errorCode;
         }
     }
 
@@ -181,8 +192,8 @@ public partial class RedisDb : IRedisDb
     // MasterData의 StageEnemy 데이터와 redis에 저장해놓은 데이터 비교 
     public async Task<Tuple<ErrorCode, List<ItemInfo>, Int64>> CheckStageClearDataAsync(Int64 userId)
     {
-        var stageItemKey = "Stage_" + userId + "_Item";
-        var stageEnemyKey = "Stage_" + userId + "_Enemy";
+        var stageItemKey = "User_" + userId + "_StageItem";
+        var stageEnemyKey = "User_" + userId + "_StageEnemy";
 
         try
         {
@@ -228,9 +239,11 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "CheckStageClearData Exception");
+            var errorCode = ErrorCode.CheckStageClearDataFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CheckStageClearData Exception");
             
-            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.CheckStageClearDataFailException, null, 0);
+            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, null, 0);
         }
     }
 }

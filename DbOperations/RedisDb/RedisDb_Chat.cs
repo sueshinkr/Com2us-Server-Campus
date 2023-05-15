@@ -3,6 +3,7 @@ using CloudStructures.Structures;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using StackExchange.Redis;
 using WebAPIServer.DataClass;
+using WebAPIServer.Log;
 using ZLogger;
 
 namespace WebAPIServer.DbOperations;
@@ -10,7 +11,7 @@ namespace WebAPIServer.DbOperations;
 public partial class RedisDb : IRedisDb
 {
     // 로그인시 채팅로비 접속
-    // 
+    // 현재 접속인원이 가장 많은 로비 선택
     public async Task<Tuple<ErrorCode, Int64>> EnterChatLobbyFromLoginAsync(Int64 userId)
     {
         try
@@ -43,15 +44,17 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "EnterChatLobbyFromLogin Exception");
+            var errorCode = ErrorCode.EnterChatLobbyFromLoginFailException;
 
-            return new Tuple<ErrorCode, Int64>(ErrorCode.EnterChatLobbyFromLoginFailException, 0);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "EnterChatLobbyFromLogin Exception");
+
+            return new Tuple<ErrorCode, Int64>(errorCode, 0);
         }
     }
 
     // 채팅로비 지정 접속
     //
-    public async Task<Tuple<ErrorCode, List<string>>>   SelectChatLobbyAsync(Int64 userId, Int64 lobbyNum)
+    public async Task<Tuple<ErrorCode, List<string>>> SelectChatLobbyAsync(Int64 userId, Int64 lobbyNum)
     {
         try
         {
@@ -103,9 +106,11 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "SelectChatLobby Exception");
+            var errorCode = ErrorCode.SelectChatLobbyFailException;
 
-            return new Tuple<ErrorCode, List<string>>(ErrorCode.SelectChatLobbyFailException, null);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "SelectChatLobby Exception");
+
+            return new Tuple<ErrorCode, List<string>>(errorCode, null);
         }
     }
 
@@ -140,9 +145,11 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "SendChat Exception");
+            var errorCode = ErrorCode.SendChatFailException;
 
-            return ErrorCode.SendChatFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "SendChat Exception");
+
+            return errorCode;
         }
     }
 
@@ -180,9 +187,11 @@ public partial class RedisDb : IRedisDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "ReceiveChat Exception");
+            var errorCode = ErrorCode.ReceiveChatFailException;
 
-            return new Tuple<ErrorCode, List<string>>(ErrorCode.ReceiveChatFailException, null);
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReceiveChat Exception");
+
+            return new Tuple<ErrorCode, List<string>>(errorCode, null);
         }
     }
 }

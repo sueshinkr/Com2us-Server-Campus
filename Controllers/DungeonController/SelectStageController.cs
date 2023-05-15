@@ -29,7 +29,6 @@ public class SelectStage : ControllerBase
     public async Task<SelectStageResponse> Post(SelectStageRequest request)
     {
         var response = new SelectStageResponse();
-        response.Result = ErrorCode.None;
 
         (var errorCode, response.stageItem, response.stageEnemy) = await _gameDb.SelectStageAsync(request.UserId, request.StageCode);
         if (errorCode != ErrorCode.None)

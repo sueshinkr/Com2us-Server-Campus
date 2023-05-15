@@ -25,7 +25,6 @@ public class SendChat : ControllerBase
     public async Task<SendChatResponse> Post(SendChatRequest request)
     {
         var response = new SendChatResponse();
-        response.Result = ErrorCode.None;
 
         var errorCode = await _redisDb.SendChatAsync(request.UserId, request.Message);
         if (errorCode != ErrorCode.None)

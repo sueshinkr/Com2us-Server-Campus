@@ -29,7 +29,6 @@ public class ClearStage : ControllerBase
     public async Task<ClearStageResponse> Post(ClearStageRequest request)
     {
         var response = new ClearStageResponse();
-        response.Result = ErrorCode.None;
 
         (var errorCode, var itemList, var stageCode) = await _redisDb.CheckStageClearDataAsync(request.UserId);
         if (errorCode != ErrorCode.None)

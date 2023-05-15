@@ -29,7 +29,6 @@ public class AbortStage : ControllerBase
     public async Task<AbortStageResponse> Post(AbortStageRequest request)
     {
         var response = new AbortStageResponse();
-        response.Result = ErrorCode.None;
 
         var errorCode = await _redisDb.DeleteStageProgressDataAsync(request.UserId);
         if (errorCode != ErrorCode.None)

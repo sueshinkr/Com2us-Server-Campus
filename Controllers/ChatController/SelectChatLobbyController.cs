@@ -25,7 +25,6 @@ public class SelectChatLobby : ControllerBase
     public async Task<SelectChatLobbyResponse> Post(SelectChatLobbyRequest request)
     {
         var response = new SelectChatLobbyResponse();
-        response.Result = ErrorCode.None;
 
         (var errorCode, response.ChatHistory) = await _redisDb.SelectChatLobbyAsync(request.UserId, request.LobbyNum);
         if (errorCode != ErrorCode.None)
