@@ -115,9 +115,3 @@
     ReceiveChatFailWrongUser = 10012,
     ReceiveChatFailException = 10013
 }
-
-public class DefaultSetting
-{
-    public Int64 MailsPerPage { get; set; }
-    public Int64 GeneratorId { get; set; }
-}

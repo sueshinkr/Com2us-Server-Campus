@@ -26,12 +26,10 @@ LogManager.SetLogging(builder);
 var app = builder.Build();
 
 var redisDb = app.Services.GetRequiredService<IRedisDb>();
-var redisDbTask = redisDb.Init();
+await redisDb.Init();
 
 var masterDb = app.Services.GetRequiredService<IMasterDb>();
-var masterDbTask = masterDb.Init();
-
-await Task.WhenAll(redisDbTask, masterDbTask);
+await masterDb.Init();
 
 // 로그인 이후 유저 인증
 app.UseMiddleware<WebAPIServer.Middleware.CheckUserAuth>();
@@ -40,3 +38,10 @@ app.UseRouting();
 app.MapControllers();
 
 app.Run(configuration["ServerAddress"]);
+
+
+public class DefaultSetting
+{
+    public Int64 MailsPerPage { get; set; }
+    public Int64 GeneratorId { get; set; }
+}

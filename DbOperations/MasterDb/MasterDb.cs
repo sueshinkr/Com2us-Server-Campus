@@ -8,6 +8,7 @@ using MySqlConnector;
 using SqlKata.Execution;
 using WebAPIServer.DataClass;
 using ZLogger;
+using WebAPIServer.Log;
 
 namespace WebAPIServer.DbOperations;
 
@@ -54,15 +55,18 @@ public class MasterDb : IMasterDb
             StageEnemyInfo = await _queryFactory.Query("StageEnemy").GetAsync<StageEnemy>() as List<StageEnemy>;
             ExpTableInfo = await _queryFactory.Query("ExpTable").GetAsync<ExpTable>() as List<ExpTable>;
 
-            _dbConn.Close();
+            _queryFactory.Dispose();
+            _dbConn.Dispose();
 
             return ErrorCode.None;
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "MasterDb Init Exception");
+            var errorCode = ErrorCode.MasterDbInitFailException;
 
-            return ErrorCode.MasterDbInitFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "MasterDb Init Exception");
+
+            return errorCode;
         }
     }
 
@@ -81,9 +85,11 @@ public class MasterDb : IMasterDb
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, "VerifyVersionData Exception");
+            var errorCode = ErrorCode.VerifyVersionDataFailException;
 
-            return ErrorCode.VerifyVersionDataFailException;
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "VerifyVersionData Exception");
+
+            return errorCode;
         }
     }
 }
