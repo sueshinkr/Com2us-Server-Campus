@@ -1,6 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using WebAPIServer.DataClass;
+﻿using WebAPIServer.DataClass;
 
 namespace WebAPIServer.ReqRes;
 

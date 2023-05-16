@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using MySqlConnector;
 using SqlKata.Execution;
 using WebAPIServer.DataClass;
-using WebAPIServer.Log;
+using WebAPIServer.Util;
 using ZLogger;
 
 namespace WebAPIServer.DbOperations;

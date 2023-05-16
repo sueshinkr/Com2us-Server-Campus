@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using SqlKata.Execution;
 using StackExchange.Redis;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using WebAPIServer.Log;
+using WebAPIServer.Util;
 
 namespace WebAPIServer.DbOperations;
 
@@ -90,7 +90,7 @@ public partial class RedisDb : IRedisDb
             var errorCode = ErrorCode.CreateUserAuthFailException;
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CreateUserAuth Exception");
-            
+
             return errorCode;
         }
     }
@@ -118,7 +118,7 @@ public partial class RedisDb : IRedisDb
         catch (Exception ex)
         {
             _logger.ZLogError(ex, "GetUserAuth Exception");
-            
+
             return null;
         }
     }
@@ -202,5 +202,10 @@ public partial class RedisDb : IRedisDb
     public TimeSpan NxKeyTimeSpan()
     {
         return TimeSpan.FromSeconds(RediskeyExpireTime.NxKeyExpireSecond);
+    }
+
+    public TimeSpan DungeonKeyTimeSpan()
+    {
+        return TimeSpan.FromMinutes(RediskeyExpireTime.DungeonKeyExpireMin);
     }
 }

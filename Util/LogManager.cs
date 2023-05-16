@@ -2,7 +2,7 @@
 using Cysharp.Text;
 using ZLogger;
 
-namespace WebAPIServer.Log;
+namespace WebAPIServer.Util;
 
 public static class LogManager
 {

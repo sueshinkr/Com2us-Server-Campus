@@ -1,19 +1,20 @@
 ﻿namespace WebAPIServer.DataClass;
 
-public class KilledEnemy
-{
-    public Int64 EnemyCode { get; set; }
-    public Int64 EnemyCount { get; set; }
-}
-
 public class KilledStageEnemy
 {
-    public List<KilledEnemy> KilledEnemyList { get; set; }
-    public Int64 StageCode { get; set; }
+    public Int64 GoalCount { get; set; }
+    public Int64 KilledCount { get; set; }
 }
 
 public class ObtainedStageItem
 {
-    public List<ItemInfo> obtainedItemList { get; set; }
-    public Int64 StageCode { get; set; }
+    public Int64 MaxCount { get; set; }
+    public Int64 ObtainedCount { get; set; }
+}
+
+public class RediskeyExpireTime
+{
+    public const ushort NxKeyExpireSecond = 3;
+    public const ushort LoginKeyExpireMin = 600;
+    public const ushort DungeonKeyExpireMin = 60;
 }

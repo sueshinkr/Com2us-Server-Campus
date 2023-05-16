@@ -3,7 +3,7 @@ using SqlKata.Execution;
 using MySqlConnector;
 using WebAPIServer.DataClass;
 using ZLogger;
-using WebAPIServer.Log;
+using WebAPIServer.Util;
 
 namespace WebAPIServer.DbOperations;
 

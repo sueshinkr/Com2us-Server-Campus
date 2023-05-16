@@ -8,7 +8,7 @@ using MySqlConnector;
 using SqlKata.Execution;
 using WebAPIServer.DataClass;
 using ZLogger;
-using WebAPIServer.Log;
+using WebAPIServer.Util;
 
 namespace WebAPIServer.DbOperations;
 

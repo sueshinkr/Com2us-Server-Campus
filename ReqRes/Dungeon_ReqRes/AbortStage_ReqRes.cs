@@ -1,8 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using WebAPIServer.DataClass;
-
-namespace WebAPIServer.ReqRes;
+﻿namespace WebAPIServer.ReqRes;
 
 public class AbortStageRequest : UserAuthRequest
 {

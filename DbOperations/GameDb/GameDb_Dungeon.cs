@@ -3,7 +3,7 @@ using SqlKata.Execution;
 using MySqlConnector;
 using WebAPIServer.DataClass;
 using ZLogger;
-using WebAPIServer.Log;
+using WebAPIServer.Util;
 
 namespace WebAPIServer.DbOperations;
 
@@ -38,8 +38,8 @@ public partial class GameDb : IGameDb
         {
             if (stageCode != 1)
             {
-                var hasQualified = await _queryFactory.Query("ClearStage").Where("UserId", userId)
-                                                      .Where("StageCode", stageCode - 1).ExistsAsync();
+                var hasQualified = await _queryFactory.Query("User_Data").Where("UserId", userId)                   
+                                                      .Where("BestClearStage", ">=", stageCode - 1).ExistsAsync();
 
                 if (hasQualified == false)
                 {
@@ -49,6 +49,11 @@ public partial class GameDb : IGameDb
 
             var stageItem = _masterDb.StageItemInfo.FindAll(i => i.Code == stageCode);
             var stageEnemy = _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode);
+
+            if (stageItem.Count == 0 || stageEnemy.Count == 0)
+            {
+                return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.SelectStageFailWrongStage, null, null);
+            }
 
             return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.None, stageItem, stageEnemy);
         }
@@ -82,8 +87,6 @@ public partial class GameDb : IGameDb
             {
                 return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, itemInfo, obtainExp);
             }
-
-            // 병렬작업...?
 
             return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.None, itemInfo, obtainExp);
         }
@@ -230,10 +233,20 @@ public partial class GameDb : IGameDb
     // ClearStage 테이블에 데이터 추가 또는 업데이트 
     public async Task<ErrorCode> UpdateStageClearDataAsync(Int64 userId, Int64 stageCode, Int64 clearRank, TimeSpan clearTime)
     {
-        var beforeClearData = new ClearData();
+        Int64 bestClearStage = 0;
+        var beforeClearData = new ClearData();       
 
         try
         {
+            bestClearStage = await _queryFactory.Query("User_Data").Where("UserId", userId)
+                                                .Select("BestClearStage").FirstOrDefaultAsync<Int64>();
+
+            if (bestClearStage < stageCode)
+            {
+                await _queryFactory.Query("User_Data").Where("UserId", userId)
+                                   .UpdateAsync(new { BestClearStage = stageCode });
+            }
+
             beforeClearData = await _queryFactory.Query("ClearStage").Where("UserId", userId)
                                                  .Where("StageCode", stageCode).FirstOrDefaultAsync<ClearData>();
 
@@ -267,6 +280,9 @@ public partial class GameDb : IGameDb
         catch (Exception ex)
         {
             // 롤백
+            await _queryFactory.Query("User_Data").Where("UserId", userId)
+                               .UpdateAsync(new { BestClearStage = bestClearStage });
+
             if (beforeClearData == null)
             {
                 await _queryFactory.Query("ClearStage").Where("UserId", userId)

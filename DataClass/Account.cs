@@ -14,10 +14,3 @@ public class UserAuth
     public string AuthToken { get; set; } = "";
     public DateTime LastLogin { get; set; }
 }
-
-public class RediskeyExpireTime
-{
-    public const ushort NxKeyExpireSecond = 3;
-    //public const ushort RegistKeyExpireSecond = 6000;
-    public const ushort LoginKeyExpireMin = 600;
-}

@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using WebAPIServer.DataClass;
 
 namespace WebAPIServer.ReqRes;
@@ -7,6 +6,8 @@ namespace WebAPIServer.ReqRes;
 public class SelectStageRequest : UserAuthRequest
 {
     public Int64 UserId { get; set; }
+
+    [Range(1, int.MaxValue)]
     public Int64 StageCode { get; set; }
 }
 

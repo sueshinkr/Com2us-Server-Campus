@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace WebAPIServer.DbOperations;
+namespace WebAPIServer.Util;
 
 public class Security
 {
