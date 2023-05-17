@@ -23,7 +23,8 @@ public partial class GameDb : IGameDb
 
         try
         {
-            mailData = await _queryFactory.Query("Mail_Data").Where("UserId", userId).Where("IsDeleted", false)
+            mailData = await _queryFactory.Query("Mail_Data").Where("UserId", userId)
+                                          .Where("IsDeleted", false).Where("ExpiredAt", ">", DateTime.Now)
                                           .OrderByDesc("MailId").Offset((pageNumber - 1) * mailsPerPage).Limit((int)mailsPerPage)
                                           .GetAsync<MailData>() as List<MailData>;
 

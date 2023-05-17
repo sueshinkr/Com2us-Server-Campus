@@ -16,4 +16,9 @@ public static class GenerateKey
     {
         return new string("User_" + userId + "_StageEnemy");
     }
+
+    public static string LobbyChatHistoryKey(Int64 lobbyNum)
+    {
+        return new string("Lobby_" + lobbyNum + "_History");
+    }
 }

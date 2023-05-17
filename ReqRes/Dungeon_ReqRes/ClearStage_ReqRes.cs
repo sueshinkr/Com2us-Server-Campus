@@ -19,5 +19,5 @@ public class ClearStageResponse
 {
     public ErrorCode Result { get; set; } = ErrorCode.None;
     public List<ItemInfo> itemInfo { get; set; }
-    public Int64 ObtainExp { get; set; }
+    public Int64 ObtainedExp { get; set; }
 }

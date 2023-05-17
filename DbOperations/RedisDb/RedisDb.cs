@@ -33,8 +33,7 @@ public partial class RedisDb : IRedisDb
     {
         try
         {
-            var key = "LobbyList";
-            var lobbyListRedis = new RedisSortedSet<Int64>(_redisConn, key, null);
+            var lobbyListRedis = new RedisSortedSet<Int64>(_redisConn, "LobbyUserCount", null);
 
             if (await lobbyListRedis.ExistsAsync<RedisSortedSet<Int64>>() == true)
             {

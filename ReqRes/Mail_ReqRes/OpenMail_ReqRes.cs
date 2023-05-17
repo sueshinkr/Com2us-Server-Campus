@@ -9,7 +9,7 @@ public class OpenMailBoxRequest : UserAuthRequest
 {
     public Int64 UserId { get; set; }
 
-    [Range(1, double.PositiveInfinity)]
+    [Range(1, int.MaxValue)]
     public Int64 PageNumber { get; set; }
 }
 

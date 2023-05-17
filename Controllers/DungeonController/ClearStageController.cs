@@ -33,15 +33,18 @@ public class ClearStage : ControllerBase
         (var errorCode, var itemList, var stageCode) = await _redisDb.CheckStageClearDataAsync(request.UserId);
         if (errorCode != ErrorCode.None)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "ClearStage Error");
+            if (errorCode != ErrorCode.CheckStageClearDataFailNotComplete)
+            {
+                _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "ClearStage Error");
 
-            await _redisDb.DeleteStageProgressDataAsync(request.UserId);
-
+                await _redisDb.DeleteStageProgressDataAsync(request.UserId);
+            }
+            
             response.Result = errorCode;
             return response;
         }
 
-        (errorCode, response.itemInfo, response.ObtainExp) = await _gameDb.ReceiveStageClearRewardAsync(request.UserId, stageCode, itemList);
+        (errorCode, response.itemInfo, response.ObtainedExp) = await _gameDb.ReceiveStageClearRewardAsync(request.UserId, stageCode, itemList);
         if (errorCode != ErrorCode.None)
         {
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId }, "ClearStage Error");

@@ -30,7 +30,7 @@ public class SelectStage : ControllerBase
     {
         var response = new SelectStageResponse();
 
-        (var errorCode, response.stageItem, response.stageEnemy) = await _gameDb.SelectStageAsync(request.UserId, request.StageCode);
+        (var errorCode, response.stageItem, response.stageEnemy) = await _gameDb.VerifySelectedStageAsync(request.UserId, request.StageCode);
         if (errorCode != ErrorCode.None)
         {
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode }, "SelectStage Error");
@@ -42,11 +42,15 @@ public class SelectStage : ControllerBase
         errorCode = await _redisDb.CreateStageProgressDataAsync(request.UserId, request.StageCode);
         if (errorCode != ErrorCode.None)
         {
-            _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode }, "SelectStage Error");
+            if (errorCode != ErrorCode.CreateStageProgressDataFailInProgress)
+            {
+                _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, StageCode = request.StageCode }, "SelectStage Error");
+
+                response.stageItem = null;
+                response.stageEnemy = null;
+            }
 
             response.Result = errorCode;
-            response.stageItem = null;
-            response.stageEnemy = null;
             return response;
         }
 
