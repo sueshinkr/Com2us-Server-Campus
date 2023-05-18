@@ -32,6 +32,7 @@ public class OpenMailBox : ControllerBase
         if (errorCode != ErrorCode.None)
         {
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { UserId = request.UserId, PageNumber = request.PageNumber }, "OpenMailBox Error");
+
             response.Result = errorCode;
             return response;
         }

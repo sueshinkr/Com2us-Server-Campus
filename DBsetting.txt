@@ -167,8 +167,8 @@ CREATE DATABASE IF NOT EXISTS GameDb;
 
 USE GameDb;
 
-DROP TABLE IF EXISTS GameDb.`User_Data`;
-CREATE TABLE IF NOT EXISTS GameDb.`User_Data`
+DROP TABLE IF EXISTS GameDb.`User_BasicInformation`;
+CREATE TABLE IF NOT EXISTS GameDb.`User_BasicInformation`
 (
     AccountId BIGINT NOT NULL PRIMARY KEY COMMENT '계정번호',
     UserId BIGINT NOT NULL AUTO_INCREMENT UNIQUE KEY COMMENT '유저번호',
@@ -245,8 +245,8 @@ CREATE TABLE IF NOT EXISTS GameDb.`InAppReceipt`
 
 
 
-DROP TABLE IF EXISTS GameDb.`ClearStage`;
-CREATE TABLE IF NOT EXISTS GameDb.`ClearStage`
+DROP TABLE IF EXISTS GameDb.`User_ClearStage`;
+CREATE TABLE IF NOT EXISTS GameDb.`User_ClearStage`
 (
     UserId BIGINT NOT NULL COMMENT '계정번호',
     StageCode INT NOT NULL COMMENT '스테이지 번호',

@@ -16,11 +16,6 @@ public partial class GameDb : IGameDb
         var mailData = new List<MailData>();
         var mailsPerPage = _defaultSetting.MailsPerPage;
 
-        if (pageNumber < 1)
-        {
-            return new Tuple<ErrorCode, List<MailData>>(ErrorCode.LoadMailDataFailWrongPage, mailData);
-        }
-
         try
         {
             mailData = await _queryFactory.Query("Mail_Data").Where("UserId", userId)
@@ -46,36 +41,64 @@ public partial class GameDb : IGameDb
     {
         try
         {
-            var content = await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-                                             .Where("UserId", userId).Where("IsDeleted", false)
-                                             .Select("Content").FirstOrDefaultAsync<string>();
-
-            if (content == null)
+            // 메일 본문 가져오기
+            (var errorCode, var content, var isRead) = await ReadMailContent(mailId, userId);
+            if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.ReadMailFailWrongData, null, null);
+                return new Tuple<ErrorCode, string, List<MailItem>>(errorCode, null, null);
             }
 
-            var mailItem = await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
-                                              .Select("ItemId", "ItemCode", "ItemCount", "IsReceived")
-                                              .GetAsync<MailItem>() as List<MailItem>;
+            // 메일 아이템 가져오기
+            var mailItem = await ReadMailItem(mailId);
 
-            await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-                               .UpdateAsync(new { IsRead = true });
+            // 메일 읽음 처리
+            await UpdateMailReadStatus(mailId, isRead);
 
             return new Tuple<ErrorCode, string, List<MailItem>>(ErrorCode.None, content, mailItem);
         }
         catch (Exception ex)
         {
-            // 롤백
-            await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-                               .UpdateAsync(new { IsRead = false });
-
             var errorCode = ErrorCode.ReadMailFailException;
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReadMailFail Exception");
 
             return new Tuple<ErrorCode, string, List<MailItem>>(errorCode, null, null);
         }
+    }
+
+    private async Task<Tuple<ErrorCode, string, bool>> ReadMailContent(Int64 mailId, Int64 userId)
+    {
+        (var content, var isRead) = await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                                                       .Where("UserId", userId).Where("IsDeleted", false)
+                                                       .Where("ExpiredAt", ">", DateTime.Now).Select("Content", "IsRead")
+                                                       .FirstOrDefaultAsync<Tuple<string, bool>>();
+
+        if (content == null)
+        {
+            return new Tuple<ErrorCode, string, bool>(ErrorCode.ReadMailFailWrongData, null, false);
+        }
+
+        return new Tuple<ErrorCode, string, bool>(ErrorCode.None, content, isRead);
+    }
+
+    private async Task<List<MailItem>> ReadMailItem(Int64 mailId)
+    {
+        var mailItem = await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
+                                          .Select("ItemId", "ItemCode", "ItemCount", "IsReceived")
+                                          .GetAsync<MailItem>() as List<MailItem>;
+
+        return mailItem;
+    }
+
+    private async Task UpdateMailReadStatus(Int64 mailId, bool isRead)
+    {
+        if (isRead == true)
+        {
+            return;
+        }
+
+        await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                           .UpdateAsync(new { IsRead = true });
     }
 
     // 메일 아이템 수령
@@ -87,68 +110,91 @@ public partial class GameDb : IGameDb
 
         try
         {
-            var isCorrectRequest = await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-                                                      .Where("UserId", userId).Where("IsDeleted", false)
-                                                      .ExistsAsync();
-
-            if (isCorrectRequest == false)
+            // 올바른 아이템 수령 요청인지 검증
+            errorCode = await CheckReceiveableMailItem(mailId, userId);
+            if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveMailItemFailWrongData, null);
+                return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, null);
             }
 
-            var mailItem = await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
-                                              .GetAsync<MailItem>() as List<MailItem>;
-
-            foreach (MailItem item in mailItem)
-            {
-                (errorCode, var newItem) = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, item.ItemId);
-
-                if (errorCode != ErrorCode.None)
-                {
-                    break;
-                }
-
-                itemInfo.Add(newItem);
-            }
-
+            // 아이템을 유저에게 지급
+            (errorCode, itemInfo) = await InsertMailItemToUserItem(mailId, userId);
             if (errorCode != ErrorCode.None)
             {
                 // 롤백
-                foreach (ItemInfo item in itemInfo)
-                {
-                    await DeleteUserItemAsync(userId, item.ItemId, item.ItemCount);
-                }
+                await ReceiveMailItemRollBack(userId, itemInfo);
 
-                return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.ReceiveMailItemFailInsertItem, null);
+                return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, null);
             }
 
-            await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
-                               .UpdateAsync(new { IsReceived = true });
-
-            await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-                               .UpdateAsync(new { HasItem = false });
+            // 메일 아이템 수령 처리
+            await UpdateMailItemReceiveStatus(mailId);
 
             return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.None, itemInfo);
         }
         catch (Exception ex)
         {
             //롤백
-            foreach(ItemInfo item in itemInfo)
-            {
-                await DeleteUserItemAsync(userId, item.ItemId, item.ItemCount);
-            }
-
-            await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
-                               .UpdateAsync(new { IsReceived = false });
-
-            await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-                               .UpdateAsync(new { HasItem = true });
+            await ReceiveMailItemRollBack(userId, itemInfo);
 
             errorCode = ErrorCode.ReceiveMailItemFailException;
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReceiveMailItem Exception");
 
             return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, itemInfo);
+        }
+    }
+
+    private async Task<ErrorCode> CheckReceiveableMailItem(Int64 mailId, Int64 userId)
+    {
+        var isCorrectMail = await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                                               .Where("UserId", userId).Where("IsDeleted", false)
+                                               .Where("HasItem", true).Where("ExpiredAt", ">", DateTime.Now)
+                                               .ExistsAsync();
+
+        if (isCorrectMail == false)
+        {
+            return ErrorCode.ReceiveMailItemFailWrongData;
+        }
+
+        return ErrorCode.None;
+    }
+
+    private async Task<Tuple<ErrorCode, List<ItemInfo>>> InsertMailItemToUserItem(Int64 mailId, Int64 userId)
+    {
+        var itemInfo = new List<ItemInfo>();
+        var mailItem = await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
+                                          .GetAsync<MailItem>() as List<MailItem>;
+
+        foreach (MailItem item in mailItem)
+        {
+            (var errorCode, var newItem) = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, item.ItemId);
+
+            if (errorCode != ErrorCode.None)
+            {
+                return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, itemInfo);
+            }
+
+            itemInfo.Add(newItem);
+        }
+
+        return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.None, itemInfo);
+    }
+
+    private async Task UpdateMailItemReceiveStatus(Int64 mailId)
+    {
+        await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
+                           .UpdateAsync(new { IsReceived = true });
+
+        await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                           .UpdateAsync(new { HasItem = false });
+    }
+
+    private async Task ReceiveMailItemRollBack(Int64 userId, List<ItemInfo> itemInfo)
+    {
+        foreach (ItemInfo delitem in itemInfo)
+        {
+            await DeleteUserItemAsync(userId, delitem.ItemId, delitem.ItemCount);
         }
     }
 
@@ -194,9 +240,7 @@ public partial class GameDb : IGameDb
     {
         try
         {
-            Int64 itemId;
-
-            itemId = _idGenerator.CreateId();
+            var itemId = _idGenerator.CreateId();
 
             await _queryFactory.Query("Mail_Item").InsertAsync(new
             {

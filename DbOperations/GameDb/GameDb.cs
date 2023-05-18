@@ -44,42 +44,72 @@ public partial class GameDb : IGameDb
     }
 
     // 유저 기본 데이터 생성
-    // User_Data 테이블에 유저 추가 / User_Item 테이블에 아이템 추가
-    public async Task<ErrorCode> CreateBasicDataAsync(Int64 accountId)
+    // User_BasicInformation 테이블에 유저 추가 / User_Item 테이블에 아이템 추가
+    public async Task<ErrorCode> CreateUserDefaultDataAsync(Int64 accountId)
     {
+        var userId = new Int64();
+
         try
         {
-            var userId = await _queryFactory.Query("User_Data")
-                                            .InsertGetIdAsync<Int64>(new { accountId = accountId });
+            // User_BasicInformation 테이블에 유저 초기 기본 데이터 추가
+            userId = await _queryFactory.Query("User_BasicInformation")
+                                        .InsertGetIdAsync<Int64>(new { accountId = accountId });
 
+            // User_Attendance 테이블에 유저 출석정보 데이터 추가
             await _queryFactory.Query("User_Attendance")
                                .InsertAsync(new { UserId = userId });
 
-            List<(Int64, Int64)> defaultitem = new List<(Int64, Int64)> { (2, 1), (4, 1), (5, 1), (6, 100) };
-            foreach ((Int64 itemCode, Int64 count) in defaultitem)
+            // User_Item 테이블에 유저 초기 아이템 데이터 추가
+            var errorCode = await CreateUserDefaultItemAsync(userId);
+            if (errorCode != ErrorCode.None)
             {
-                (var errorCode, var useritem) = await InsertUserItemAsync(userId, itemCode, count);
-                if (errorCode != ErrorCode.None)
-                {
-                    // 롤백
-                    await _queryFactory.Query("User_Data").Where("UserId", userId).DeleteAsync();
-                    await _queryFactory.Query("User_Attendance").Where("UserId", userId).DeleteAsync();
-                    await _queryFactory.Query("User_Item").Where("UserId", userId).DeleteAsync();
-
-                    return errorCode;
-                }
+                return errorCode;
             }
 
             return ErrorCode.None;
         }
         catch (Exception ex)
         {
+            // 롤백 
+            await CreateUserDefaultDataRollBack(userId);
+
             var errorCode = ErrorCode.CreateBasicDataFailException;
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CreateBasicData Exception");
 
             return errorCode;
         }
+    }
+
+    private async Task<ErrorCode> CreateUserDefaultItemAsync(Int64 userId)
+    {
+        List<(Int64, Int64)> defaultitem = new List<(Int64, Int64)> { (2, 1), (4, 1), (5, 1), (6, 100) };
+        foreach ((Int64 itemCode, Int64 count) in defaultitem)
+        {
+            (var errorCode, var useritem) = await InsertUserItemAsync(userId, itemCode, count);
+            if (errorCode != ErrorCode.None)
+            {
+                // 롤백
+                await CreateUserDefaultDataRollBack(userId);
+
+                return errorCode;
+            }
+        }
+
+        return ErrorCode.None;
+    }
+
+    private async Task CreateUserDefaultDataRollBack(Int64 userId)
+    {
+        if (userId == 0)
+        {
+            return;
+        }
+
+        // 각 테이블에서 User 데이터 모두 제거
+        await _queryFactory.Query("User_BasicInformation").Where("UserId", userId).DeleteAsync();
+        await _queryFactory.Query("User_Attendance").Where("UserId", userId).DeleteAsync();
+        await _queryFactory.Query("User_Item").Where("UserId", userId).DeleteAsync();
     }
 
     // 유저 데이터에 아이템 추가
@@ -92,13 +122,14 @@ public partial class GameDb : IGameDb
         {
             var itemData = _masterDb.ItemInfo.Find(i => i.Code == itemCode);
 
-            if (itemData.Attribute == 5)
+            if (itemData.Attribute == 5) // Attribute가 5면 Money를 뜻함
             {
-                await _queryFactory.Query("User_Data").Where("UserId", userId)
+                await _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
                                    .IncrementAsync("Money", (int)itemCount);
             }
             else
             {
+                // itemId가 미리 부여된 아이템이 아닌경우 새로 부여
                 if (itemId == 0)
                 {
                     itemId = _idGenerator.CreateId();
@@ -139,9 +170,9 @@ public partial class GameDb : IGameDb
         {
             Int64 isDeleted;
 
-            if (itemId == 0)
+            if (itemId == 0) // itemId가 0이면 Money를 뜻함
             {
-                isDeleted = await _queryFactory.Query("User_Data").Where("UserId", userId)
+                isDeleted = await _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
                                                .DecrementAsync("Money", (int)itemCount);
             }
             else
@@ -168,14 +199,14 @@ public partial class GameDb : IGameDb
     }
 
     // 유저 기본 데이터 로딩
-    // User_Data 테이블에서 유저 기본 정보 가져오기
+    // User_BasicInformation 테이블에서 유저 기본 정보 가져오기
     public async Task<Tuple<ErrorCode, UserData>> UserDataLoading(Int64 accountId)
     {
         var userData = new UserData();
 
         try
         {
-            userData = await _queryFactory.Query("User_Data").Where("accountId", accountId)
+            userData = await _queryFactory.Query("User_BasicInformation").Where("accountId", accountId)
                                           .FirstOrDefaultAsync<UserData>();
 
             return new Tuple<ErrorCode, UserData>(ErrorCode.None, userData);

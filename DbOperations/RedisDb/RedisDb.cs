@@ -34,17 +34,15 @@ public partial class RedisDb : IRedisDb
         try
         {
             var lobbyListRedis = new RedisSortedSet<Int64>(_redisConn, "LobbyUserCount", null);
-
             if (await lobbyListRedis.ExistsAsync<RedisSortedSet<Int64>>() == true)
             {
                 return ErrorCode.None;
             }
 
             var lobbyList = new List<RedisSortedSetEntry<Int64>>();
-
-            for (int i = 1; i <= 100; i++)
+            for (int lobbyNum = 1; lobbyNum <= 100; lobbyNum++)
             {
-                lobbyList.Add(new RedisSortedSetEntry<Int64>(i, 0));
+                lobbyList.Add(new RedisSortedSetEntry<Int64>(lobbyNum, 0));
             }
 
             await lobbyListRedis.AddAsync(lobbyList);
@@ -63,8 +61,10 @@ public partial class RedisDb : IRedisDb
 
     // 유저 정보 생성
     // accountId로 키밸류 추가
-    public async Task<ErrorCode> CreateUserAuthAsync(string email, string authToken, Int64 accountId)
+    public async Task<Tuple<ErrorCode, string>> CreateUserAuthAsync(string email, Int64 accountId)
     {
+        string authToken = Security.RandomString(25);
+
         var uid = "UID_" + accountId;
         var user = new UserAuth
         {
@@ -76,13 +76,12 @@ public partial class RedisDb : IRedisDb
         try
         {
             var userAuthRedis = new RedisString<UserAuth>(_redisConn, uid, LoginTimeSpan());
-
             if (await userAuthRedis.SetAsync(user, LoginTimeSpan()) == false)
             {
-                return ErrorCode.CreateUserAuthFailRedis;
+                return new Tuple<ErrorCode, string>(ErrorCode.CreateUserAuthFailRedis, null);
             }
 
-            return ErrorCode.None;
+            return new Tuple<ErrorCode, string>(ErrorCode.None, authToken);
         }
         catch (Exception ex)
         {
@@ -90,7 +89,7 @@ public partial class RedisDb : IRedisDb
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CreateUserAuth Exception");
 
-            return errorCode;
+            return new Tuple<ErrorCode, string>(errorCode, null);
         }
     }
 
@@ -123,13 +122,11 @@ public partial class RedisDb : IRedisDb
     }
 
     // 락걸기
-    // 
     public async Task<bool> SetUserReqLockAsync(string userLockKey)
     {
         try
         {
             var lockRedis = new RedisString<UserAuth>(_redisConn, userLockKey, NxKeyTimeSpan());
-
             if (await lockRedis.SetAsync(new UserAuth { }, NxKeyTimeSpan(), StackExchange.Redis.When.NotExists) == false)
             {
                 return true;
@@ -155,6 +152,7 @@ public partial class RedisDb : IRedisDb
         {
             var lockRedis = new RedisString<UserAuth>(_redisConn, userLockKey, null);
             var lockRedisResult = await lockRedis.DeleteAsync();
+
             return lockRedisResult;
         }
         catch

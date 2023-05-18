@@ -27,10 +27,11 @@ public class CreateAccount: ControllerBase
     public async Task<CreateAccountResponse> Post(CreateAccountRequest request)
     {
         var response = new CreateAccountResponse();
+        var errorCode = new ErrorCode();
 
         // 계정 정보 생성
         // Account 테이블에 계정 추가 
-        (var errorCode, response.AccountId) = await _accountDb.CreateAccountAsync(request.Email, request.Password);
+        (errorCode, response.AccountId) = await _accountDb.CreateAccountAsync(request.Email, request.Password);
         if (errorCode != ErrorCode.None)
         {
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "CreateAccount Error");
@@ -40,10 +41,13 @@ public class CreateAccount: ControllerBase
         }
 
         // 유저 기본 데이터 생성
-        // User_Data 테이블에 유저 추가 / User_Item 테이블에 아이템 추가
-        errorCode = await _gameDb.CreateBasicDataAsync(response.AccountId);
+        // User_BasicInformation 테이블에 유저 추가 / User_Item 테이블에 아이템 추가
+        errorCode = await _gameDb.CreateUserDefaultDataAsync(response.AccountId);
         if (errorCode != ErrorCode.None)
         {
+            // 롤백
+            await _accountDb.DeleteAccountAsync(request.Email);
+
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "CreateAccount Error");
 
             response.Result = errorCode;

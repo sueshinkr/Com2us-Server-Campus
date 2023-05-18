@@ -10,7 +10,7 @@ namespace WebAPIServer.DbOperations;
 public partial class GameDb : IGameDb
 {
     // 유저 출석 데이터 로딩
-    // User_Data 테이블에서 유저 출석 정보 가져온 뒤 새로운 출석인지 아닌지 판별
+    // User_BasicInformation 테이블에서 유저 출석 정보 가져온 뒤 새로운 출석인지 아닌지 판별
     public async Task<Tuple<ErrorCode, Int64, bool>> LoadAttendanceDataAsync(Int64 userId)
     {
         try
@@ -48,55 +48,32 @@ public partial class GameDb : IGameDb
     // 새로운 출석에 대한 요청을 판별하여 처리, 보상 메일 전송
     public async Task<ErrorCode> HandleNewAttendanceAsync(Int64 userId)
     {
+        var userData = new UserAttendance();
+
         try
         {
-            var errorCode = new ErrorCode();
-            var userData = await _queryFactory.Query("User_Attendance").Where("UserId", userId)
-                                              .FirstOrDefaultAsync<UserAttendance>();
-
-            if (userData == null)
+            // 유저 현재 출석정보 로딩
+            (var errorCode, userData) = await LoadUserCurrentAttendance(userId);
+            if (errorCode != ErrorCode.None)
             {
-                return ErrorCode.HandleNewAttendanceFailWrongUser;
+                return errorCode;
             }
 
-            if (userData.LastAttendance.Day == DateTime.Now.Day)
-            {                
-                return ErrorCode.HandleNewAttendanceFailNotNewAttendance;
-            }
-            else if (userData.AttendanceCount == 30 || userData.LastAttendance.Day + 1 < DateTime.Now.Day)
+            // 유저 출석정보 갱신
+            (errorCode, var newAttendanceCount) = await UpdateUserAttendance(userId, userData);
+            if (errorCode != ErrorCode.None)
             {
-                await _queryFactory.Query("User_Attendance").Where("UserId", userId)
-                                   .UpdateAsync(new
-                                   {
-                                       LastAttendance = DateTime.Now,
-                                       AttendanceCount = 1,
-                                   });
-
-                errorCode = await SendMailAttendanceRewardAsync(userId, 1);
-            }
-            else
-            {
-                await _queryFactory.Query("User_Attendance").Where("UserId", userId)
-                                   .UpdateAsync(new
-                                   {
-                                       LastAttendance = DateTime.Now,
-                                       AttendanceCount = userData.AttendanceCount + 1
-                                   });
-
-                errorCode = await SendMailAttendanceRewardAsync(userId, userData.AttendanceCount + 1);
+                return errorCode;
             }
 
+            // 출석 보상 메일 전송
+            errorCode = await SendMailAttendanceRewardAsync(userId, newAttendanceCount);
             if (errorCode != ErrorCode.None)
             {
                 // 롤백
-                await _queryFactory.Query("User_Attendance").Where("UserId", userId)
-                                   .UpdateAsync(new
-                                   {
-                                       LastAttendance = userData.LastAttendance,
-                                       AttendanceCount = userData.AttendanceCount
-                                   });
+                await UpdateUserAttendanceRollBack(userId, userData);
 
-                return ErrorCode.HandleNewAttendanceFailSendMail;
+                return errorCode;
             }
 
             return ErrorCode.None;
@@ -111,6 +88,56 @@ public partial class GameDb : IGameDb
         }
     }
 
+    private async Task<Tuple<ErrorCode, UserAttendance>> LoadUserCurrentAttendance(Int64 userId)
+    {
+        var userData = await _queryFactory.Query("User_Attendance").Where("UserId", userId)
+                                          .FirstOrDefaultAsync<UserAttendance>();
+
+        if (userData == null)
+        {
+            return new Tuple<ErrorCode, UserAttendance>(ErrorCode.LoadUserCurrentAttendanceFailWrongUser, null);
+        }
+
+        return new Tuple<ErrorCode, UserAttendance>(ErrorCode.None, userData);
+    }
+
+    private async Task<Tuple<ErrorCode, Int64>> UpdateUserAttendance(Int64 userId, UserAttendance userData)
+    {
+        var newAttendanceCount = new Int64();
+
+        if (userData.LastAttendance.Day == DateTime.Now.Day)
+        {
+            return new Tuple<ErrorCode, Int64>(ErrorCode.UpdateUserAttendanceNotNewAttendance, 0);
+        }
+        else if (userData.AttendanceCount == 30 || userData.LastAttendance.Day + 1 < DateTime.Now.Day)
+        {
+            newAttendanceCount = 1;
+        }
+        else
+        {
+            newAttendanceCount = userData.AttendanceCount + 1;
+        }
+
+        await _queryFactory.Query("User_Attendance").Where("UserId", userId)
+                            .UpdateAsync(new
+                            {
+                                LastAttendance = DateTime.Now,
+                                AttendanceCount = newAttendanceCount,
+                            });
+
+        return new Tuple<ErrorCode, Int64>(ErrorCode.None, newAttendanceCount);
+    }
+
+    private async Task UpdateUserAttendanceRollBack(Int64 userId, UserAttendance userData)
+    {
+        await _queryFactory.Query("User_Attendance").Where("UserId", userId)
+                           .UpdateAsync(new
+                           {
+                               LastAttendance = userData.LastAttendance,
+                               AttendanceCount = userData.AttendanceCount
+                           });
+    }
+
     // 출석 보상 메일 전송
     // Mail_data 및 Mail_Item 테이블에 데이터 추가
     private async Task<ErrorCode> SendMailAttendanceRewardAsync(Int64 userId, Int64 attendanceCount)
@@ -121,6 +148,7 @@ public partial class GameDb : IGameDb
         {
             var attendanceReward = _masterDb.AttendanceRewardInfo.Find(i => i.Code == attendanceCount);
 
+            // 메일 본문 전송
             await _queryFactory.Query("Mail_Data").InsertAsync(new
             {
                 MailId = mailId,
@@ -132,13 +160,12 @@ public partial class GameDb : IGameDb
                 ExpiredAt = DateTime.Now.AddDays(7)
             });
 
+            // 메일 아이템 전송
             var errorCode = await InsertItemIntoMailAsync(mailId, attendanceReward.ItemCode, attendanceReward.Count);
-
             if (errorCode != ErrorCode.None)
             {
                 // 롤백
-                await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
-                await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
+                await SendMailAttendanceRewardRollBack(mailId);
 
                 return ErrorCode.SendMailAttendanceRewardFailInsertItemIntoMail;
             }
@@ -147,10 +174,6 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            // 롤백
-            await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
-            await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
-
             var errorCode = ErrorCode.SendMailAttendanceRewardFailException;
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "SendMailAttendanceReward Exception");
@@ -159,5 +182,10 @@ public partial class GameDb : IGameDb
         }
     }
 
+    private async Task SendMailAttendanceRewardRollBack(Int64 mailId)
+    {
+        await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
+        await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
+    }
 }
 

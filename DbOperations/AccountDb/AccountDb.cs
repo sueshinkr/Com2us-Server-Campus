@@ -42,19 +42,19 @@ public class AccountDb : IAccountDb
     {
         try
         {
-            var accountid = _idGenerator.CreateId();
+            var accountId = _idGenerator.CreateId();
             var saltValue = Security.RandomString(64);
             var hashedPassword = Security.MakeHashedPassword(saltValue, password);
             
             await _queryFactory.Query("Account").InsertAsync(new
             {
-                AccountId = accountid,
+                AccountId = accountId,
                 Email = email,
                 SaltValue = saltValue,
                 HashedPassword = hashedPassword
             });
 
-            return new Tuple<ErrorCode, Int64>(ErrorCode.None, accountid);
+            return new Tuple<ErrorCode, Int64>(ErrorCode.None, accountId);
         }
         catch (Exception ex)
         {
@@ -75,25 +75,35 @@ public class AccountDb : IAccountDb
         }
     }
 
+    // 계정 정보 삭제
+    // Account 테이블의 계정 삭제
+    public async Task DeleteAccountAsync(string email)
+    {
+        await _queryFactory.Query("Account").Where("Email", email)
+                           .DeleteAsync();
+    }
+
     // 계정 정보 검증
     // Account 테이블의 데이터를 바탕으로 검증
     public async Task<Tuple<ErrorCode, Int64>> VerifyAccountAsync(string email, string password)
     {
         try
         {
-            var accountinfo = await _queryFactory.Query("Account").Where("Email", email).FirstOrDefaultAsync<Account>();
-            if (accountinfo is null || accountinfo.AccountId == null)
+            // Account 테이블에 email에 해당하는 레코드가 존재하는지 확인
+            var accountInfo = await _queryFactory.Query("Account").Where("Email", email).FirstOrDefaultAsync<Account>();
+            if (accountInfo is null || accountInfo.AccountId == null)
             {
                 return new Tuple<ErrorCode, Int64>(ErrorCode.LoginFailUserNotExist, 0);
             }
 
-            var hashedPassword = Security.MakeHashedPassword(accountinfo.SaltValue, password);
-            if (hashedPassword != accountinfo.HashedPassword)
+            // SaltValue를 이용해 해시한 패스워드가 일치하는지 확_
+            var hashedPassword = Security.MakeHashedPassword(accountInfo.SaltValue, password);
+            if (hashedPassword != accountInfo.HashedPassword)
             {
                 return new Tuple<ErrorCode, Int64>(ErrorCode.LoginFailPwNotMatch, 0);
             }
 
-            return new Tuple<ErrorCode, Int64>(ErrorCode.None, accountinfo.AccountId);
+            return new Tuple<ErrorCode, Int64>(ErrorCode.None, accountInfo.AccountId);
         }
         catch (Exception ex)
         {

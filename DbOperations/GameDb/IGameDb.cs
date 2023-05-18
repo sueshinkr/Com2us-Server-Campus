@@ -5,7 +5,7 @@ namespace WebAPIServer.DbOperations;
 
 public interface IGameDb : IDisposable
 {
-    public Task<ErrorCode> CreateBasicDataAsync(Int64 accountid);
+    public Task<ErrorCode> CreateUserDefaultDataAsync(Int64 accountid);
     public Task<Tuple<ErrorCode, UserData>> UserDataLoading(Int64 accountid);
     public Task<Tuple<ErrorCode, List<UserItem>>> UserItemLoadingAsync(Int64 userid);
 

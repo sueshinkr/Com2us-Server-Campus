@@ -137,8 +137,6 @@ public partial class RedisDb : IRedisDb
     // 유저의 stageItemKey에 아이템 추가
     public async Task<ErrorCode> ObtainItemAsync(Int64 userId, Int64 itemCode, Int64 itemCount)
     {
-        var stageItemKey = GenerateKey.StageItemKey(userId);
-
         try
         {
             // 유저가 스테이지 진행중인지 확인
@@ -148,25 +146,12 @@ public partial class RedisDb : IRedisDb
                 return errorCode;
             }
 
-            // 아이템 임시 획득 처리
-            var obtainedItemRedis = new RedisDictionary<Int64, ObtainedStageItem>(_redisConn, stageItemKey, null);
-
-            var obtainedItemRedisResult = await obtainedItemRedis.GetAsync(itemCode);
-
-            if (obtainedItemRedisResult.HasValue == false)
+            // 아이템 획득 처리
+            errorCode = await UpdateObtainedItem(userId, itemCode, itemCount);
+            if (errorCode != ErrorCode.None)
             {
-                return ErrorCode.ObtainItemFailWrongItem;
+                return errorCode;
             }
-
-            var obtainedItem = obtainedItemRedisResult.Value;
-            obtainedItem.ObtainedCount += itemCount;
-
-            if (obtainedItem.ObtainedCount > obtainedItem.MaxCount)
-            {
-                return ErrorCode.ObtainItemFailToManyItem;
-            }
-
-            await obtainedItemRedis.SetAsync(itemCode, obtainedItem);
 
             return ErrorCode.None;
         }
@@ -195,12 +180,36 @@ public partial class RedisDb : IRedisDb
         return new Tuple<ErrorCode, Int64>(ErrorCode.None, stageRedisResult.Value);
     }
 
+    private async Task<ErrorCode> UpdateObtainedItem(Int64 userId, Int64 itemCode, Int64 itemCount)
+    {
+        var stageItemKey = GenerateKey.StageItemKey(userId);
+
+        var obtainedItemRedis = new RedisDictionary<Int64, ObtainedStageItem>(_redisConn, stageItemKey, null);
+        var obtainedItemRedisResult = await obtainedItemRedis.GetAsync(itemCode);
+
+        if (obtainedItemRedisResult.HasValue == false)
+        {
+            return ErrorCode.ObtainItemFailWrongItem;
+        }
+
+        var obtainedItem = obtainedItemRedisResult.Value;
+        obtainedItem.ObtainedCount += itemCount;
+
+        if (obtainedItem.ObtainedCount > obtainedItem.MaxCount)
+        {
+            return ErrorCode.ObtainItemFailToManyItem;
+        }
+
+        await obtainedItemRedis.SetAsync(itemCode, obtainedItem);
+
+        return ErrorCode.None;
+    }
+
+
     // 스테이지 적 제거 
     // 유저의 stageEnemyKey에 적 추가
     public async Task<ErrorCode> KillEnemyAsync(Int64 userId, Int64 enemyCode)
     {
-        var stageEnemyKey = GenerateKey.StageEnemyKey(userId);
-
         try
         {
             // 유저가 스테이지 진행중인지 확인
@@ -211,24 +220,11 @@ public partial class RedisDb : IRedisDb
             }
 
             // 적 제거 정보 처리
-            var killedEnemyRedis = new RedisDictionary<Int64, KilledStageEnemy>(_redisConn, stageEnemyKey, null);
-
-            var killedEnemyRedisResult = await killedEnemyRedis.GetAsync(enemyCode);
-
-            if (killedEnemyRedisResult.HasValue == false)
+            errorCode = await UpdateKilledEnemy(userId, enemyCode);
+            if (errorCode != ErrorCode.None)
             {
-                return ErrorCode.KillEnemyFailWrongEnemy;
+                return errorCode;
             }
-
-            var killedEnemy = killedEnemyRedisResult.Value;
-            killedEnemy.KilledCount++;
-
-            if (killedEnemy.KilledCount > killedEnemy.GoalCount)
-            {
-                return ErrorCode.killEnemyFailToManyEnemy;
-            }
-
-            await killedEnemyRedis.SetAsync(enemyCode, killedEnemy, null);
 
             return ErrorCode.None;
         }
@@ -240,6 +236,31 @@ public partial class RedisDb : IRedisDb
 
             return errorCode;
         }
+    }
+
+    private async Task<ErrorCode> UpdateKilledEnemy(Int64 userId, Int64 enemyCode)
+    {
+        var stageEnemyKey = GenerateKey.StageEnemyKey(userId);
+
+        var killedEnemyRedis = new RedisDictionary<Int64, KilledStageEnemy>(_redisConn, stageEnemyKey, null);
+        var killedEnemyRedisResult = await killedEnemyRedis.GetAsync(enemyCode);
+
+        if (killedEnemyRedisResult.HasValue == false)
+        {
+            return ErrorCode.KillEnemyFailWrongEnemy;
+        }
+
+        var killedEnemy = killedEnemyRedisResult.Value;
+        killedEnemy.KilledCount++;
+
+        if (killedEnemy.KilledCount > killedEnemy.GoalCount)
+        {
+            return ErrorCode.killEnemyFailToManyEnemy;
+        }
+
+        await killedEnemyRedis.SetAsync(enemyCode, killedEnemy, null);
+
+        return ErrorCode.None;
     }
 
     // 스테이지 클리어 확인
@@ -263,7 +284,7 @@ public partial class RedisDb : IRedisDb
             }
 
             // 획득 아이템 정보 가져오기
-            var itemList = await GetObtainedItemList(userId);
+            var itemList = await LoadObtainedItemList(userId);
 
             return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.None, itemList, stageCode);
         }
@@ -297,7 +318,7 @@ public partial class RedisDb : IRedisDb
         return ErrorCode.None;
     }
 
-    private async Task<List<ItemInfo>> GetObtainedItemList(Int64 userId)
+    private async Task<List<ItemInfo>> LoadObtainedItemList(Int64 userId)
     {
         var stageItemKey = GenerateKey.StageItemKey(userId);
 

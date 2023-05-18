@@ -15,6 +15,7 @@ public partial class GameDb : IGameDb
     {
         try
         {
+            // 결제 정보 저장
             await _queryFactory.Query("InAppReceipt").InsertAsync(new
             {
                 PurchaseId = purchaseId,
@@ -24,7 +25,6 @@ public partial class GameDb : IGameDb
 
             // 메일 전송
             var errorCode = await SendMailInAppProduct(userId, productCode);
-
             if (errorCode != ErrorCode.None)
             {
                 // 롤백
@@ -63,6 +63,7 @@ public partial class GameDb : IGameDb
 
         try
         {
+            // 메일 본문 전송
             await _queryFactory.Query("Mail_Data").InsertAsync(new
             {
                 MailId = mailId,
@@ -74,6 +75,7 @@ public partial class GameDb : IGameDb
                 ExpiredAt = DateTime.Now.AddYears(10)
             });
 
+            // 메일 아이템 전송
             foreach (InAppProduct product in _masterDb.InAppProductInfo.FindAll(i => i.Code == purchaseCode))
             {
                 var errorCode = await InsertItemIntoMailAsync(mailId, product.ItemCode, product.ItemCount);
@@ -81,8 +83,7 @@ public partial class GameDb : IGameDb
                 if (errorCode != ErrorCode.None)
                 {
                     // 롤백
-                    await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
-                    await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
+                    await SendMailInAppProductRollBack(mailId);
 
                     return errorCode;
                 }
@@ -92,10 +93,6 @@ public partial class GameDb : IGameDb
         }
         catch (Exception ex)
         {
-            // 롤백
-            await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
-            await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
-
             var errorCode = ErrorCode.SendMailInAppProductFailException;
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "SendMailInAppProduct Exception");
@@ -104,4 +101,9 @@ public partial class GameDb : IGameDb
         }
     }
 
+    private async Task SendMailInAppProductRollBack(Int64 mailId)
+    {
+        await _queryFactory.Query("Mail_Data").Where("MailId", mailId).DeleteAsync();
+        await _queryFactory.Query("Mail_Item").Where("MailId", mailId).DeleteAsync();
+    }
 }

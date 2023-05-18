@@ -15,7 +15,7 @@ public partial class GameDb : IGameDb
     {
         try
         {
-            var clearStage = await _queryFactory.Query("ClearStage").Where("UserId", userId)
+            var clearStage = await _queryFactory.Query("User_ClearStage").Where("UserId", userId)
                                                 .GetAsync<ClearData>() as List<ClearData>;
 
             return new Tuple<ErrorCode, List<ClearData>>(ErrorCode.None, clearStage);
@@ -66,7 +66,7 @@ public partial class GameDb : IGameDb
     {
         if (stageCode != 1)
         {
-            var hasQualified = await _queryFactory.Query("User_Data").Where("UserId", userId)
+            var hasQualified = await _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
                                                   .Where("BestClearStage", ">=", stageCode - 1).ExistsAsync();
 
             if (hasQualified == false)
@@ -92,26 +92,25 @@ public partial class GameDb : IGameDb
     }
 
     // 던전 클리어 처리
-    // redis에 저장하고있었던 획득 목록에 따라 User_Item 테이블에 데이터 추가, User_Data 테이블 업데이트
+    // redis에 저장하고있었던 획득 목록에 따라 User_Item 테이블에 데이터 추가, User_BasicInformation 테이블 업데이트
     public async Task<Tuple<ErrorCode, List<ItemInfo>, Int64>> ReceiveStageClearRewardAsync(Int64 userId, Int64 stageCode, List<ItemInfo> itemList)
     {
-        var itemInfo = new List<ItemInfo>();
-        Int64 obtainExp = 0;
-
         try
         {
             // 아이템 획득 처리
-            (var errorCode, itemInfo) = await ReceiveItemReward(userId, itemList);
+            (var errorCode, var itemInfo) = await ReceiveItemReward(userId, itemList);
             if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, itemInfo, obtainExp);
+                return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, null, 0);
             }
 
             // 경험치 획득 처리
-            (errorCode, obtainExp) = await ReceiveExpReward(userId, stageCode);
+            (errorCode, var obtainExp) = await ReceiveExpReward(userId, stageCode);
             if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, itemInfo, obtainExp);
+                await ReceiveItemRewardRollBack(userId, itemList);
+
+                return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, null, 0);
             }
 
             return new Tuple<ErrorCode, List<ItemInfo>, Int64>(ErrorCode.None, itemInfo, obtainExp);
@@ -122,7 +121,7 @@ public partial class GameDb : IGameDb
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReceiveStageClearReward Exception");
 
-            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, itemInfo, obtainExp);
+            return new Tuple<ErrorCode, List<ItemInfo>, Int64>(errorCode, null, 0);
         }
     }
 
@@ -214,7 +213,7 @@ public partial class GameDb : IGameDb
     }
 
     // 경험치 획득 처리
-    // User_Data 테이블 업데이트
+    // User_BasicInformation 테이블 업데이트
     private async Task<Tuple<ErrorCode, Int64>> ReceiveExpReward(Int64 userId, Int64 stageCode)
     {
         var userData = new UserData();
@@ -259,7 +258,7 @@ public partial class GameDb : IGameDb
 
     private async Task<Tuple<Int64, Int64>> CalculateUserLevelandExp(Int64 userId, Int64 obtainedExp, UserData userData)
     {
-        userData = _queryFactory.Query("User_Data").Where("UserId", userId)
+        userData = _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
                                     .FirstOrDefault<UserData>();
 
         var exp = userData.Exp + obtainedExp;
@@ -277,7 +276,7 @@ public partial class GameDb : IGameDb
 
     private async Task UpdateUserLevelandExp(Int64 userId, Int64 level, Int64 exp)
     {
-        await _queryFactory.Query("User_Data").Where("UserId", userId)
+        await _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
                            .UpdateAsync(new { Level = level, Exp = exp });
     }
 
@@ -314,12 +313,12 @@ public partial class GameDb : IGameDb
 
     private async Task<Int64> UpdateBestClearStage(Int64 userId, Int64 stageCode)
     {
-        var bestClearStage = await _queryFactory.Query("User_Data").Where("UserId", userId)
+        var bestClearStage = await _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
                                                 .Select("BestClearStage").FirstOrDefaultAsync<Int64>();
 
         if (bestClearStage < stageCode)
         {
-            await _queryFactory.Query("User_Data").Where("UserId", userId)
+            await _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
                                .UpdateAsync(new { BestClearStage = stageCode });
         }
 
@@ -328,12 +327,12 @@ public partial class GameDb : IGameDb
 
     private async Task<ClearData> UpdateClearData(Int64 userId, Int64 stageCode, Int64 clearRank, TimeSpan clearTime)
     {
-        var beforeClearData = await _queryFactory.Query("ClearStage").Where("UserId", userId)
+        var beforeClearData = await _queryFactory.Query("User_ClearStage").Where("UserId", userId)
                                                  .Where("StageCode", stageCode).FirstOrDefaultAsync<ClearData>();
 
         if (beforeClearData == null)
         {
-            await _queryFactory.Query("ClearStage").InsertAsync(new
+            await _queryFactory.Query("User_ClearStage").InsertAsync(new
             {
                 UserId = userId,
                 StageCode = stageCode,
@@ -343,7 +342,7 @@ public partial class GameDb : IGameDb
         }
         else if (beforeClearData.ClearRank < clearRank)
         {
-            await _queryFactory.Query("ClearStage").Where("UserId", userId)
+            await _queryFactory.Query("User_ClearStage").Where("UserId", userId)
                                .Where("StageCode", stageCode).UpdateAsync(new
                                {
                                    ClearRank = clearRank,
@@ -352,7 +351,7 @@ public partial class GameDb : IGameDb
         }
         else if (beforeClearData.ClearRank == clearRank && beforeClearData.ClearTime > clearTime)
         {
-            await _queryFactory.Query("ClearStage").Where("UserId", userId)
+            await _queryFactory.Query("User_ClearStage").Where("UserId", userId)
                                .Where("StageCode", stageCode).UpdateAsync(new { ClearTime = clearTime });
         }
 
@@ -361,17 +360,17 @@ public partial class GameDb : IGameDb
 
     private async Task UpdateStageClearDataRollBack(Int64 userId, Int64 stageCode, Int64 beforeBestClearStage, ClearData beforeClearData)
     {
-        await _queryFactory.Query("User_Data").Where("UserId", userId)
+        await _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
                                .UpdateAsync(new { BestClearStage = beforeBestClearStage });
 
         if (beforeClearData == null)
         {
-            await _queryFactory.Query("ClearStage").Where("UserId", userId)
+            await _queryFactory.Query("User_ClearStage").Where("UserId", userId)
                                .Where("StageCode", stageCode).DeleteAsync();
         }
         else
         {
-            await _queryFactory.Query("ClearStage").Where("UserId", userId)
+            await _queryFactory.Query("User_ClearStage").Where("UserId", userId)
                                .Where("StageCode", stageCode).UpdateAsync(new
                                {
                                    ClearRank = beforeClearData.ClearRank,

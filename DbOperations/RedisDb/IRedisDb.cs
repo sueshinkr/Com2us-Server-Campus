@@ -6,7 +6,7 @@ public interface IRedisDb
 {
     public Task<ErrorCode> Init();
 
-    public Task<ErrorCode> CreateUserAuthAsync(string email, string authToken, Int64 accountid);
+    public Task<Tuple<ErrorCode, string>> CreateUserAuthAsync(string email, Int64 accountid);
     public Task<UserAuth> GetUserAuthAsync(Int64 accountid);
     public Task<bool> SetUserReqLockAsync(string userLockKey);
     public Task<bool> DelUserReqLockAsync(string userLockKey);

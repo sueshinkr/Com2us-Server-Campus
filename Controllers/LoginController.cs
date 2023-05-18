@@ -56,8 +56,7 @@ public class Login : ControllerBase
         }
 
         // 인증키 생성
-        response.Authtoken = Security.RandomString(25);
-        errorCode = await _redisDb.CreateUserAuthAsync(request.Email, response.Authtoken, accountId);
+        (errorCode, response.Authtoken) = await _redisDb.CreateUserAuthAsync(request.Email, accountId);
         if (errorCode != ErrorCode.None)
         {
             _logger.ZLogErrorWithPayload(LogManager.MakeEventId(errorCode), new { Email = request.Email }, "Login Error");
@@ -66,7 +65,6 @@ public class Login : ControllerBase
             return response;
         }
 
-        // UserData 테이블 / UserItem 테이블에서 유저 정보 찾아서 클라이언트에 전달
         // 기본 데이터 로딩
         (errorCode, response.userData) = await _gameDb.UserDataLoading(accountId);
         if (errorCode != ErrorCode.None)

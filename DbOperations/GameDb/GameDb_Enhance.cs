@@ -17,35 +17,30 @@ public partial class GameDb : IGameDb
 
         try
         {
-            (var errorCode, itemData, var enhanceData) = await CheckEnhanceableAsync(userId, itemId);
-
+            // 강화 가능 여부 확인 
+            (var errorCode, itemData) = await CheckEnhanceableAsync(userId, itemId);
             if (errorCode != ErrorCode.None)
             {
                 return new Tuple<ErrorCode, UserItem>(errorCode, itemData);
             }
 
-            var isSuccess = DetermineEnhancementResult();
-
+            // 강화 확률 실행
+            var isSuccess = await DetermineEnhancementResult();
             if (isSuccess == true)
             {
-                errorCode = await HandleSuccessfulEnhancementAsync(itemId, itemData, enhanceData.Attribute);
+                // 강화 성공시 처리 
+                errorCode = await HandleSuccessfulEnhancementAsync(itemId, itemData);
             }
             else
             {
+                // 강화 실패시 처리
                 errorCode = await HandleFailedEnhancementAsync(itemId, itemData);
             }
 
             if (errorCode != ErrorCode.None)
             {
                 // 롤백
-                await _queryFactory.Query("User_Item").Where("ItemId", itemId)
-                                   .UpdateAsync(new
-                                   {
-                                       Attack = itemData.Attack,
-                                       Defence = itemData.Defence,
-                                       EnhanceCount = itemData.EnhanceCount,
-                                       IsDestroyed = itemData.IsDestroyed
-                                   });
+                await EnhanceItemRollBack(itemId, itemData);
 
                 return new Tuple<ErrorCode, UserItem>(errorCode, null);
             }
@@ -53,17 +48,7 @@ public partial class GameDb : IGameDb
             return new Tuple<ErrorCode, UserItem>(ErrorCode.None, itemData);
         }
         catch (Exception ex)
-        {
-            // 롤백
-            await _queryFactory.Query("User_Item").Where("ItemId", itemId)
-                               .UpdateAsync(new
-                               {
-                                   Attack = itemData.Attack,
-                                   Defence = itemData.Defence,
-                                   EnhanceCount = itemData.EnhanceCount,
-                                   IsDestroyed = itemData.IsDestroyed
-                               });
-
+        {            
             var errorCode = ErrorCode.EnhanceItemFailException;
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "EnhanceItem Exception");
@@ -72,43 +57,46 @@ public partial class GameDb : IGameDb
         }
     }
 
+    private async Task EnhanceItemRollBack(Int64 itemId, UserItem itemData)
+    {
+        await _queryFactory.Query("User_Item").Where("ItemId", itemId)
+                           .UpdateAsync(new
+                           {
+                               Attack = itemData.Attack,
+                               Defence = itemData.Defence,
+                               EnhanceCount = itemData.EnhanceCount,
+                               IsDestroyed = itemData.IsDestroyed
+                           });
+    }
+
     // 강화 가능 여부 체크
-    // User_Item, User_Data 테이블 데이터 검증
-    private async Task<Tuple<ErrorCode, UserItem, Item>> CheckEnhanceableAsync(Int64 userId, Int64 itemId)
+    // User_Item, User_BasicInformation 테이블 데이터 검증
+    private async Task<Tuple<ErrorCode, UserItem>> CheckEnhanceableAsync(Int64 userId, Int64 itemId)
     {
         try
         {
-            var itemData = await _queryFactory.Query("User_Item").Where("ItemId", itemId)
-                                              .Where("UserId", userId).Where("IsDestroyed", false)
-                                              .FirstOrDefaultAsync<UserItem>();
-
-            if (itemData == null)
+            // 올바른 아이템인지 확인
+            (var errorCode, var itemData) = await CheckItemExistence(userId, itemId);
+            if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailWrongData, itemData, null);
+                return new Tuple<ErrorCode, UserItem>(errorCode, null);
             }
 
-            var enhanceData = _masterDb.ItemInfo.Find(i => i.Code == itemData.ItemCode);
-
-            if (enhanceData.EnhanceMaxCount == 0)
+            // 강화 가능한 아이템인지 확인
+            errorCode = await CheckValidEnhance(itemData);
+            if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailNotEnhanceable, null, null);
-            }
-            else if (itemData.EnhanceCount == enhanceData.EnhanceMaxCount)
-            {
-                return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailAlreadyMax, null, null);
+                return new Tuple<ErrorCode, UserItem>(errorCode, null);
             }
 
-            var enhanceCost = (itemData.EnhanceCount + 1) * 10;
-            var hasEnoughMoney = await _queryFactory.Query("User_Data").Where("UserId", userId)
-                                        .Where("Money", ">", enhanceCost)
-                                        .DecrementAsync("Money", (int)enhanceCost);
-
-            if (hasEnoughMoney == 0)
+            // 강화 비용 지불 가능 여부 확인
+            errorCode = await CheckEnhanceCostPayable(userId, itemData);
+            if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.CheckEnhanceableFailNotEnoughMoney, null, null);
+                return new Tuple<ErrorCode, UserItem>(errorCode, null);
             }
 
-            return new Tuple<ErrorCode, UserItem, Item>(ErrorCode.None, itemData, enhanceData);
+            return new Tuple<ErrorCode, UserItem>(ErrorCode.None, itemData);
         }
         catch (Exception ex)
         {
@@ -116,12 +104,57 @@ public partial class GameDb : IGameDb
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "CheckEnhanceable Exception");
 
-            return new Tuple<ErrorCode, UserItem, Item>(errorCode, null, null);
+            return new Tuple<ErrorCode, UserItem>(errorCode, null);
         }
     }
 
+    private async Task<Tuple<ErrorCode, UserItem>> CheckItemExistence(Int64 userId, Int64 itemId)
+    {
+        var itemData = await _queryFactory.Query("User_Item").Where("ItemId", itemId)
+                                              .Where("UserId", userId).Where("IsDestroyed", false)
+                                              .FirstOrDefaultAsync<UserItem>();
+
+        if (itemData == null)
+        {
+            return new Tuple<ErrorCode, UserItem>(ErrorCode.CheckEnhanceableFailWrongData, null);
+        }
+
+        return new Tuple<ErrorCode, UserItem>(ErrorCode.None, itemData);
+    }
+
+    private async Task<ErrorCode> CheckValidEnhance(UserItem itemData)
+    {
+        var enhanceData = _masterDb.ItemInfo.Find(i => i.Code == itemData.ItemCode);
+
+        if (enhanceData.EnhanceMaxCount == 0)
+        {
+            return ErrorCode.CheckEnhanceableFailNotEnhanceable;
+        }
+        else if (itemData.EnhanceCount == enhanceData.EnhanceMaxCount)
+        {
+            return ErrorCode.CheckEnhanceableFailAlreadyMax;
+        }
+
+        return ErrorCode.None;
+    }
+
+    private async Task<ErrorCode> CheckEnhanceCostPayable(Int64 userId, UserItem itemData)
+    {
+        var enhanceCost = (itemData.EnhanceCount + 1) * 10;
+        var hasEnoughMoney = await _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
+                                    .Where("Money", ">", enhanceCost)
+                                    .DecrementAsync("Money", (int)enhanceCost);
+
+        if (hasEnoughMoney == 0)
+        {
+            return ErrorCode.CheckEnhanceableFailNotEnoughMoney;
+        }
+
+        return ErrorCode.None;
+    }
+
     // 강화 확률 실행
-    private bool DetermineEnhancementResult()
+    private async Task<bool> DetermineEnhancementResult()
     {
         var random = new Random();
         var isSuccess = random.NextDouble() < 0.85;
@@ -130,10 +163,12 @@ public partial class GameDb : IGameDb
     }
 
     // 강화 성공시 작업
-    private async Task<ErrorCode> HandleSuccessfulEnhancementAsync(Int64 itemId, UserItem itemData, Int64 itemAttribute)
+    private async Task<ErrorCode> HandleSuccessfulEnhancementAsync(Int64 itemId, UserItem itemData)
     {
         try
         {
+            var itemAttribute = _masterDb.ItemInfo.Find(i => i.Code == itemData.ItemCode).Attribute;
+
             if (itemAttribute == 1) // 무기
             {
                 await _queryFactory.Query("User_Item").Where("ItemId", itemId)
