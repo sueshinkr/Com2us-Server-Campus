@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Text.Json;
 using CloudStructures.Structures;
 using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using StackExchange.Redis;
 using WebAPIServer.DataClass;
@@ -11,6 +13,8 @@ namespace WebAPIServer.DbOperations;
 
 public partial class RedisDb : IRedisDb
 {
+    const int CHAT_MAX_LENGTH = 100;
+
     // 로그인시 채팅로비 접속
     // 로비에 접속중인 인원수 변경 및 유저가 접속한 로비정보 저장
     public async Task<Tuple<ErrorCode, Int64>> EnterChatLobbyFromLoginAsync(Int64 userId)
@@ -95,8 +99,8 @@ public partial class RedisDb : IRedisDb
     }
 
     // 채팅로비 지정 접속
-    //
-    public async Task<Tuple<ErrorCode, List<string>>> SelectChatLobbyAsync(Int64 userId, Int64 newLobbyNum)
+    // 기존 데이터 업데이트
+    public async Task<Tuple<ErrorCode, List<ChatMessage>>> SelectChatLobbyAsync(Int64 userId, Int64 newLobbyNum)
     {
         try
         {
@@ -104,19 +108,19 @@ public partial class RedisDb : IRedisDb
             (var errorCode, var userLobbyNum) = await LoadUserCurrentLobby(userId);
             if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, List<string>>(errorCode, null);
+                return new Tuple<ErrorCode, List<ChatMessage>>(errorCode, null);
             }
 
             if (userLobbyNum == newLobbyNum)
             {
-                return new Tuple<ErrorCode, List<string>>(ErrorCode.SelectChatLobbyFailAlreadyIn, null);
+                return new Tuple<ErrorCode, List<ChatMessage>>(ErrorCode.SelectChatLobbyFailAlreadyIn, null);
             }
 
             // 지정한 로비로 접속
             errorCode = await EnterChatLobbyFromSelect(userLobbyNum, newLobbyNum);
             if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, List<string>>(errorCode, null);
+                return new Tuple<ErrorCode, List<ChatMessage>>(errorCode, null);
             }
 
             // 유저가 새로 접속한 로비정보 저장 
@@ -126,17 +130,17 @@ public partial class RedisDb : IRedisDb
                 // 롤백
                 await SelectChatLobbyRollBack(userLobbyNum, newLobbyNum);
 
-                return new Tuple<ErrorCode, List<string>>(errorCode, null);
+                return new Tuple<ErrorCode, List<ChatMessage>>(errorCode, null);
             }
 
             // 접속한 로비의 채팅기록 가져오기
             (errorCode, var chatHistory) = await ReceiveChatAsync(userId);
             if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, List<string>>(errorCode, null);
+                return new Tuple<ErrorCode, List<ChatMessage>>(errorCode, null);
             }
 
-            return new Tuple<ErrorCode, List<string>>(ErrorCode.None, chatHistory.ToList());
+            return new Tuple<ErrorCode, List<ChatMessage>>(ErrorCode.None, chatHistory);
         }
         catch (Exception ex)
         {
@@ -144,7 +148,7 @@ public partial class RedisDb : IRedisDb
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "SelectChatLobby Exception");
 
-            return new Tuple<ErrorCode, List<string>>(errorCode, null);
+            return new Tuple<ErrorCode, List<ChatMessage>>(errorCode, null);
         }
     }
 
@@ -158,7 +162,7 @@ public partial class RedisDb : IRedisDb
             return new Tuple<ErrorCode, Int64>(ErrorCode.LoadUserCurrentLobbyFailWrongUser, 0);
         }
 
-        var userLobbyNum = userLobbyNumRedisResult.Value;
+        var userLobbyNum = userLobbyNumRedisResult.Value; 
 
         return new Tuple<ErrorCode, Int64>(ErrorCode.None, userLobbyNum);
     }
@@ -193,7 +197,7 @@ public partial class RedisDb : IRedisDb
     }
 
     // 채팅 메시지 전송
-    //
+    // RedisStream 형식 활용
     public async Task<ErrorCode> SendChatAsync(Int64 userId, string message)
     {
         try
@@ -206,7 +210,7 @@ public partial class RedisDb : IRedisDb
             }
 
             // 송신한 메시지 레디스에 저장
-            errorCode = await AddLobbyChatHistory(userLobbyNum, userId, message);
+            (errorCode, var id) = await AddLobbyChat(userLobbyNum, userId, message);
             if (errorCode != ErrorCode.None)
             {
                 return errorCode;
@@ -224,26 +228,30 @@ public partial class RedisDb : IRedisDb
         }
     }
 
-    private async Task<ErrorCode> AddLobbyChatHistory(Int64 lobbyNum, Int64 userId, string message)
+    private async Task<Tuple<ErrorCode, string>> AddLobbyChat(Int64 lobbyNum, Int64 userId, string message)
     {
-        var key = GenerateKey.LobbyChatHistoryKey(lobbyNum);
-        var lobbyRedis = new RedisSortedSet<string>(_redisConn, key, null);
+        var key = GenerateKey.LobbyChatKey(lobbyNum);
+        var newChat = new ChatMessage { UserId = userId, TimeStamp = DateTime.Now, Message = message };
 
-        var timeStamp = DateTimeOffset.Now;
+        var id = await _redisConnBySE.StreamAddAsync(
+            key: key,
+            streamField: "UserMsg",
+            streamValue: JsonSerializer.Serialize(newChat),
+            maxLength: CHAT_MAX_LENGTH);
 
-        if (await lobbyRedis.AddAsync($"User:{userId},TimeStamp:{timeStamp},Message:{message}", timeStamp.ToUnixTimeSeconds(), TimeSpan.FromDays(1)) == false)
+        if (id.HasValue == false)
         {
-            return ErrorCode.SendChatFailRedis;
+            return new Tuple<ErrorCode, string>(ErrorCode.SendChatFailRedis, null);
         }
 
-        return ErrorCode.None;
+        return new Tuple<ErrorCode, string>(ErrorCode.None, id.ToString());
     }
 
     // 채팅 메시지 가져오기
-    //
-    public async Task<Tuple<ErrorCode, List<string>>> ReceiveChatAsync(Int64 userId)
+    // 채팅은 RedisStream에서 부여되는 id순으로 정렬되어있음
+    public async Task<Tuple<ErrorCode, List<ChatMessage>>> ReceiveChatAsync(Int64 userId)
     {
-        var chatHistory = new List<string>();
+        var chatHistory = new List<ChatMessage>();
 
         try
         {
@@ -251,13 +259,13 @@ public partial class RedisDb : IRedisDb
             (var errorCode, var userLobbyNum) = await LoadUserCurrentLobby(userId);
             if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, List<string>>(errorCode, chatHistory);
+                return new Tuple<ErrorCode, List<ChatMessage>>(errorCode, chatHistory);
             }
 
             // 레디스에서 채팅 기록 가져오기
-            chatHistory = await LoadLobbyChatHistory(userLobbyNum);
+            chatHistory = await LoadLobbyChat(userLobbyNum);
            
-            return new Tuple<ErrorCode, List<string>>(ErrorCode.None, chatHistory);
+            return new Tuple<ErrorCode, List<ChatMessage>>(ErrorCode.None, chatHistory);
         }
         catch (Exception ex)
         {
@@ -265,17 +273,24 @@ public partial class RedisDb : IRedisDb
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReceiveChat Exception");
 
-            return new Tuple<ErrorCode, List<string>>(errorCode, null);
+            return new Tuple<ErrorCode, List<ChatMessage>>(errorCode, null);
         }
     }
 
-    private async Task<List<string>> LoadLobbyChatHistory(Int64 lobbyNum)
+    private async Task<List<ChatMessage>> LoadLobbyChat(Int64 lobbyNum)
     {
-        var key = GenerateKey.LobbyChatHistoryKey(lobbyNum);
-        var lobbyRedis = new RedisSortedSet<string>(_redisConn, key, null);
+        var key = GenerateKey.LobbyChatKey(lobbyNum);
+        var streamResult = await _redisConnBySE.StreamRangeAsync(key, "-", "+", 50, Order.Descending);
 
-        var chatHistoryArray = await lobbyRedis.RangeByScoreAsync(order: Order.Descending, take: 50);
+        var chatHistory = new List<ChatMessage>();
 
-        return chatHistoryArray.ToList();
+        foreach (var entry in streamResult)
+        {
+            var entryData = entry.Values.ToDictionary(x => x.Name.ToString(), x => x.Value);
+
+            chatHistory.Add(JsonSerializer.Deserialize<ChatMessage>(entryData["UserMsg"]));
+        }
+
+        return chatHistory;
     }
 }

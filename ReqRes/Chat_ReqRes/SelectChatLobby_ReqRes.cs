@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using WebAPIServer.DataClass;
 
 namespace WebAPIServer.ReqRes;
 
@@ -13,5 +14,5 @@ public class SelectChatLobbyRequest : UserAuthRequest
 public class SelectChatLobbyResponse
 {
     public ErrorCode Result { get; set; } = ErrorCode.None;
-    public List<string> ChatHistory { get; set; }
+    public List<ChatMessage> ChatHistory { get; set; }
 }

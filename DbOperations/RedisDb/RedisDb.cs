@@ -16,6 +16,7 @@ public partial class RedisDb : IRedisDb
     readonly IMasterDb _masterDb;
 
     RedisConnection _redisConn;
+    IDatabase _redisConnBySE;
 
     public RedisDb(ILogger<RedisDb> logger, IConfiguration configuration, IMasterDb masterDb)
     {
@@ -25,6 +26,9 @@ public partial class RedisDb : IRedisDb
         var RedisAddress = configuration.GetSection("DBConnection")["Redis"];
         var Redisconfig = new RedisConfig("basic", RedisAddress);
         _redisConn = new RedisConnection(Redisconfig);
+
+        var redisConnection = ConnectionMultiplexer.Connect(RedisAddress);
+        _redisConnBySE = redisConnection.GetDatabase();
     }
 
     // 채팅로비 리스트 생성

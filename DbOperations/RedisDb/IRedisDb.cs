@@ -19,7 +19,7 @@ public interface IRedisDb
     public Task<Tuple<ErrorCode, List<ItemInfo>, Int64>> CheckStageClearDataAsync(Int64 userId);
 
     public Task<Tuple<ErrorCode, Int64>> EnterChatLobbyFromLoginAsync(Int64 userId);
-    public Task<Tuple<ErrorCode, List<string>>> SelectChatLobbyAsync(Int64 userId, Int64 lobbyNum);
+    public Task<Tuple<ErrorCode, List<ChatMessage>>> SelectChatLobbyAsync(Int64 userId, Int64 lobbyNum);
     public Task<ErrorCode> SendChatAsync(Int64 userId, string message);
-    public Task<Tuple<ErrorCode, List<string>>> ReceiveChatAsync(Int64 userId);
+    public Task<Tuple<ErrorCode, List<ChatMessage>>> ReceiveChatAsync(Int64 userId);
 }

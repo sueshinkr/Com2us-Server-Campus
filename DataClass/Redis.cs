@@ -15,6 +15,13 @@ public class ObtainedStageItem
 public class RediskeyExpireTime
 {
     public const ushort NxKeyExpireSecond = 3;
-    public const ushort LoginKeyExpireMin = 600;
+    public const ushort LoginKeyExpireMin = 6000;
     public const ushort DungeonKeyExpireMin = 60;
+}
+
+public class ChatMessage
+{
+    public Int64 UserId { get; set; }
+    public DateTime TimeStamp { get; set; }
+    public string Message { get; set; }
 }

@@ -36,7 +36,7 @@ public partial class GameDb : IGameDb
     {
         try
         {
-            // 존재하는 스테이지인지 확인
+            // 스테이지 존재 여부 확인
             (var errorCode, var stageItem, var stageEnemy) = await CheckStageExistence(stageCode);
             if (errorCode != ErrorCode.None)
             {
