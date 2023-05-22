@@ -15,14 +15,14 @@ public partial class GameDb : IGameDb
     {
         try
         {
-            var userData = await _queryFactory.Query("User_Attendance").Where("UserId", userId)
-                                              .FirstOrDefaultAsync<UserAttendance>();
-
-            if (userData == null)
+            // 유저 현재 출석정보 로딩
+            (var errorCode, var userData) = await LoadUserCurrentAttendance(userId);
+            if (errorCode != ErrorCode.None)
             {
-                return new Tuple<ErrorCode, Int64, bool>(ErrorCode.LoadAttendanceDataFailWrongUser, 0, false);
+                return new Tuple<ErrorCode, Int64, bool>(errorCode, 0, false);
             }
 
+            // 현재 출석정보에 따라 출석일수와 신규 출석 여부 판별
             if (userData.LastAttendance.Day == DateTime.Now.Day)
             {
                 return new Tuple<ErrorCode, Int64, bool>(ErrorCode.None, userData.AttendanceCount, false);
@@ -119,11 +119,11 @@ public partial class GameDb : IGameDb
         }
 
         await _queryFactory.Query("User_Attendance").Where("UserId", userId)
-                            .UpdateAsync(new
-                            {
-                                LastAttendance = DateTime.Now,
-                                AttendanceCount = newAttendanceCount,
-                            });
+                           .UpdateAsync(new
+                           {
+                               LastAttendance = DateTime.Now,
+                               AttendanceCount = newAttendanceCount,
+                           });
 
         return new Tuple<ErrorCode, Int64>(ErrorCode.None, newAttendanceCount);
     }

@@ -21,4 +21,9 @@ public static class GenerateKey
     {
         return new string("Lobby_" + lobbyNum + "_Chat");
     }
+
+    public static string LobbyUserCountKey()
+    {
+        return new string("LobbyUserCount");
+    }
 }

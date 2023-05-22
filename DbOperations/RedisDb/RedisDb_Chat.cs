@@ -52,6 +52,8 @@ public partial class RedisDb : IRedisDb
 
     private async Task<Tuple<ErrorCode,Int64>> SelectChatLobbyAsync()
     {
+        var key = GenerateKey.LobbyUserCountKey();
+
         var script = @"local lobbyNum = redis.call('ZRANGEBYSCORE', KEYS[1], 0, 70, 'LIMIT', 0, 1)
                        if #lobbyNum == 0 then
                             lobbyNum = redis.call('ZREVRANGEBYSCORE', KEYS[1], 71, 99, 'LIMIT', 0, 1)
@@ -63,7 +65,7 @@ public partial class RedisDb : IRedisDb
                             return {lobbyNum[1]}
                        end";
 
-        var luaScript = new RedisLua(_redisConn, "LobbyUserCount");
+        var luaScript = new RedisLua(_redisConn, key);
         var luaScriptResult = await luaScript.ScriptEvaluateAsync<Int64>(script, new RedisKey[] { "LobbyUserCount" });
 
         var lobbyNum = luaScriptResult.Value;
@@ -154,7 +156,9 @@ public partial class RedisDb : IRedisDb
 
     private async Task<Tuple<ErrorCode, Int64>> LoadUserCurrentLobby(Int64 userId)
     {
-        var lobbyUserListRedis = new RedisDictionary<Int64, Int64>(_redisConn, "LobbyUserList", null);
+        var key = GenerateKey.LobbyUserCountKey();
+
+        var lobbyUserListRedis = new RedisDictionary<Int64, Int64>(_redisConn, key, null);
         var userLobbyNumRedisResult = await lobbyUserListRedis.GetAsync(userId);
 
         if (userLobbyNumRedisResult.HasValue == false)
@@ -169,6 +173,8 @@ public partial class RedisDb : IRedisDb
 
     private async Task<ErrorCode> EnterChatLobbyFromSelect(Int64 userLobbyNum, Int64 newLobbyNum)
     {
+        var key = GenerateKey.LobbyUserCountKey();
+
         var script = @"local lobbyUserCount = redis.call('ZSCORE', KEYS[1], ARGV[2])
                        if lobbyUserCount and tonumber(lobbyUserCount) > 99 then
                             return { false }
@@ -178,7 +184,7 @@ public partial class RedisDb : IRedisDb
                             return { true }
                        end";
 
-        var luaScript = new RedisLua(_redisConn, "LobbyUserCount");
+        var luaScript = new RedisLua(_redisConn, key);
         var luaScriptResult = await luaScript.ScriptEvaluateAsync<bool>(script, new RedisKey[] { "LobbyUserCount" }, new RedisValue[] { userLobbyNum, newLobbyNum });
 
         if (luaScriptResult.Value == false)
@@ -191,7 +197,9 @@ public partial class RedisDb : IRedisDb
 
     private async Task SelectChatLobbyRollBack(Int64 userLobbyNum, Int64 newLobbyNum)
     {
-        var lobbyUserCountRedis = new RedisSortedSet<Int64>(_redisConn, "LobbyUserCount", null);
+        var key = GenerateKey.LobbyUserCountKey();
+        var lobbyUserCountRedis = new RedisSortedSet<Int64>(_redisConn, key, null);
+
         await lobbyUserCountRedis.IncrementAsync(userLobbyNum, 1);
         await lobbyUserCountRedis.DecrementAsync(newLobbyNum, 1);
     }

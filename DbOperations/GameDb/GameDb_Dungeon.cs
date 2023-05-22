@@ -62,6 +62,19 @@ public partial class GameDb : IGameDb
         }
     }
 
+    private async Task<Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>> CheckStageExistence(Int64 stageCode)
+    {
+        var stageItem = _masterDb.StageItemInfo.FindAll(i => i.Code == stageCode);
+        var stageEnemy = _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode);
+
+        if (stageItem.Count == 0 || stageEnemy.Count == 0)
+        {
+            return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.SelectStageFailWrongStage, null, null);
+        }
+
+        return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.None, stageItem, stageEnemy);
+    }
+
     private async Task<ErrorCode> CheckStageAccessPermission(Int64 userId, Int64 stageCode)
     {
         if (stageCode != 1)
@@ -76,19 +89,6 @@ public partial class GameDb : IGameDb
         }
 
         return ErrorCode.None;
-    }
-
-    private async Task<Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>> CheckStageExistence(Int64 stageCode)
-    {
-        var stageItem = _masterDb.StageItemInfo.FindAll(i => i.Code == stageCode);
-        var stageEnemy = _masterDb.StageEnemyInfo.FindAll(i => i.Code == stageCode);
-
-        if (stageItem.Count == 0 || stageEnemy.Count == 0)
-        {
-            return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.SelectStageFailWrongStage, null, null);
-        }
-
-        return new Tuple<ErrorCode, List<StageItem>, List<StageEnemy>>(ErrorCode.None, stageItem, stageEnemy);
     }
 
     // 던전 클리어 처리
@@ -361,7 +361,7 @@ public partial class GameDb : IGameDb
     private async Task UpdateStageClearDataRollBack(Int64 userId, Int64 stageCode, Int64 beforeBestClearStage, ClearData beforeClearData)
     {
         await _queryFactory.Query("User_BasicInformation").Where("UserId", userId)
-                               .UpdateAsync(new { BestClearStage = beforeBestClearStage });
+                           .UpdateAsync(new { BestClearStage = beforeBestClearStage });
 
         if (beforeClearData == null)
         {

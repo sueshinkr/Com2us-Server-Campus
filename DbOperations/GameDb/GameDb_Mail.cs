@@ -136,6 +136,7 @@ public partial class GameDb : IGameDb
         {
             //롤백
             await ReceiveMailItemRollBack(userId, itemInfo);
+            await UpdateMailItemReceiveStatusRollBack(mailId);
 
             errorCode = ErrorCode.ReceiveMailItemFailException;
 
@@ -188,6 +189,15 @@ public partial class GameDb : IGameDb
 
         await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
                            .UpdateAsync(new { HasItem = false });
+    }
+
+    private async Task UpdateMailItemReceiveStatusRollBack(Int64 mailId)
+    {
+        await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
+                           .UpdateAsync(new { IsReceived = false });
+
+        await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                           .UpdateAsync(new { HasItem = true });
     }
 
     private async Task ReceiveMailItemRollBack(Int64 userId, List<ItemInfo> itemInfo)

@@ -32,12 +32,14 @@ public partial class RedisDb : IRedisDb
     }
 
     // 채팅로비 리스트 생성
-    //
+    // SortedSet의 스코어를 로비 접속 인원수로 사용
     public async Task<ErrorCode> Init()
     {
         try
         {
-            var lobbyListRedis = new RedisSortedSet<Int64>(_redisConn, "LobbyUserCount", null);
+            var key = GenerateKey.LobbyUserCountKey();
+            var lobbyListRedis = new RedisSortedSet<Int64>(_redisConn, key, null);
+
             if (await lobbyListRedis.ExistsAsync<RedisSortedSet<Int64>>() == true)
             {
                 return ErrorCode.None;
