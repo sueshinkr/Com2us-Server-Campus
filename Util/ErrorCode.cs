@@ -6,11 +6,13 @@
     RedisInitFailException = 3,
     MasterDbInitFailException = 4,
 
+    // Account Error
     CreateAccountFailDuplicate = 1001,
     CreateAccountFailException = 1002,
     CreateBasicDataFailInsertItem = 1003,
     CreateBasicDataFailException = 1004,
 
+    // Login Error
     LoginFailUserNotExist = 2001,
     LoginFailPwNotMatch = 2002,
     VerifyAccountFailException = 2003,
@@ -28,6 +30,7 @@
     UserDataLoadingFailException = 3004,
     UserItemLoadingFailException = 3005,
 
+    // CheckAuth Error
     EmptyRequestHttpBody = 4001,
     InvalidRequestHttpBody = 4002,
     CheckUserGameDataNotMatch = 4003,
@@ -36,6 +39,7 @@
     AuthTokenFailSetNx = 4006,
     SetJsonFailException = 4007,
 
+    // Mail Error
     LoadMailDataFailWrongPage = 5001,
     LoadMailDataFailNoData = 5002,
     LoadMailDataFailException = 5003,
@@ -45,10 +49,13 @@
     ReceiveMailItemFailAlreadyGet = 5007,
     ReceiveMailItemFailInsertItem = 5008,
     ReceiveMailItemFailException = 5009,
-    DeleteMailFailWrongData = 5010,
-    DeleteMailFailException = 5011,
-    InsertItemIntoMailFailException = 5012,
+    InsertMailItemToUserItemFailException = 5010,
+    UpdateMailItemReceiveStatusFailException = 5011,
+    DeleteMailFailWrongData = 5012,
+    DeleteMailFailException = 5013,
+    InsertItemIntoMailFailException = 5014,
 
+    // Attendance Error
     LoadAttendanceDataFailWrongUser = 6001,
     LoadAttendanceDataFailSendMail = 6002,
     LoadAttendanceDataFailException = 6003,
@@ -60,10 +67,12 @@
     SendMailAttendanceRewardFailInsertItemIntoMail = 6009,
     SendMailAttendanceRewardFailException = 6010,
 
+    // InApp Error
     PurchaseInAppProductFailDuplicate = 7001,
     PurchaseInAppProductFailException = 7002,
     SendMailInAppProductFailException = 7003,
 
+    // Enhance Error
     CheckEnhanceableFailWrongData = 8001,
     CheckEnhanceableFailNotEnhanceable = 8002,
     CheckEnhanceableFailAlreadyMax = 8003,
@@ -73,6 +82,7 @@
     HandleFailedEnhancementFailException = 8007,
     EnhanceItemFailException = 8008,
 
+    // Dungeon Error
     LoadLoadStageListFailException = 9001,
     SelectStageFailNotQualified = 9002,
     SelectStageFailWrongStage = 9003,
@@ -102,6 +112,7 @@
     ReceiveStageClearRewardFailException = 9027,
     UpdateStageClearDataFailException = 9028,
 
+    // Chat Error
     EnterChatLobbyFromLoginFailLobbyFull = 10001,
     EnterChatLobbyFromLoginFailRedis = 10002,
     EnterChatLobbyFromLoginFailException = 10003,

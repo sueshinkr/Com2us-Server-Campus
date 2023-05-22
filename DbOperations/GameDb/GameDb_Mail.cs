@@ -68,17 +68,17 @@ public partial class GameDb : IGameDb
 
     private async Task<Tuple<ErrorCode, string, bool>> ReadMailContent(Int64 mailId, Int64 userId)
     {
-        (var content, var isRead) = await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-                                                       .Where("UserId", userId).Where("IsDeleted", false)
-                                                       .Where("ExpiredAt", ">", DateTime.Now).Select("Content", "IsRead")
-                                                       .FirstOrDefaultAsync<Tuple<string, bool>>();
+        var result = await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                                        .Where("UserId", userId).Where("IsDeleted", false)
+                                        .Where("ExpiredAt", ">", DateTime.Now).Select("Content", "IsRead")
+                                        .FirstOrDefaultAsync<(string content, bool isRead)>();
 
-        if (content == null)
+        if (result.content == null)
         {
             return new Tuple<ErrorCode, string, bool>(ErrorCode.ReadMailFailWrongData, null, false);
         }
 
-        return new Tuple<ErrorCode, string, bool>(ErrorCode.None, content, isRead);
+        return new Tuple<ErrorCode, string, bool>(ErrorCode.None, result.content, result.isRead);
     }
 
     private async Task<List<MailItem>> ReadMailItem(Int64 mailId)
@@ -122,22 +122,25 @@ public partial class GameDb : IGameDb
             if (errorCode != ErrorCode.None)
             {
                 // 롤백
-                await ReceiveMailItemRollBack(userId, itemInfo);
+                await InsertMailItemToUserItemRollBack(userId, itemInfo);
 
                 return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, null);
             }
 
             // 메일 아이템 수령 처리
-            await UpdateMailItemReceiveStatus(mailId);
+            errorCode = await UpdateMailItemReceiveStatus(mailId);
+            if (errorCode != ErrorCode.None)
+            {
+                // 롤백
+                await InsertMailItemToUserItemRollBack(userId, itemInfo);
+
+                return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, null);
+            }
 
             return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.None, itemInfo);
         }
         catch (Exception ex)
         {
-            //롤백
-            await ReceiveMailItemRollBack(userId, itemInfo);
-            await UpdateMailItemReceiveStatusRollBack(mailId);
-
             errorCode = ErrorCode.ReceiveMailItemFailException;
 
             _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "ReceiveMailItem Exception");
@@ -164,43 +167,67 @@ public partial class GameDb : IGameDb
     private async Task<Tuple<ErrorCode, List<ItemInfo>>> InsertMailItemToUserItem(Int64 mailId, Int64 userId)
     {
         var itemInfo = new List<ItemInfo>();
-        var mailItem = await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
-                                          .GetAsync<MailItem>() as List<MailItem>;
 
-        foreach (MailItem item in mailItem)
+        try
         {
-            (var errorCode, var newItem) = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, item.ItemId);
+           
+            var mailItem = await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
+                                              .GetAsync<MailItem>() as List<MailItem>;
 
-            if (errorCode != ErrorCode.None)
+            foreach (MailItem item in mailItem)
             {
-                return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, itemInfo);
+                (var errorCode, var newItem) = await InsertUserItemAsync(userId, item.ItemCode, item.ItemCount, item.ItemId);
+
+                if (errorCode != ErrorCode.None)
+                {
+                    return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, itemInfo);
+                }
+
+                itemInfo.Add(newItem);
             }
 
-            itemInfo.Add(newItem);
+            return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.None, itemInfo);
         }
+        catch (Exception ex)
+        {
+            //롤백
+            await InsertMailItemToUserItemRollBack(userId, itemInfo);
 
-        return new Tuple<ErrorCode, List<ItemInfo>>(ErrorCode.None, itemInfo);
+            var errorCode = ErrorCode.InsertMailItemToUserItemFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "InsertMailItemToUserItem Exception");
+
+            return new Tuple<ErrorCode, List<ItemInfo>>(errorCode, null);
+        }
     }
 
-    private async Task UpdateMailItemReceiveStatus(Int64 mailId)
+    private async Task<ErrorCode> UpdateMailItemReceiveStatus(Int64 mailId)
     {
-        await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
-                           .UpdateAsync(new { IsReceived = true });
+        try
+        {
+            await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
+                               .UpdateAsync(new { IsReceived = true });
 
-        await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-                           .UpdateAsync(new { HasItem = false });
+            await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
+                               .UpdateAsync(new { HasItem = false });
+
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            // 롤백
+            await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
+                               .UpdateAsync(new { IsReceived = false });
+
+            var errorCode = ErrorCode.UpdateMailItemReceiveStatusFailException;
+
+            _logger.ZLogError(LogManager.MakeEventId(errorCode), ex, "UpdateMailItemReceiveStatus Exception");
+
+            return errorCode;
+        }
     }
 
-    private async Task UpdateMailItemReceiveStatusRollBack(Int64 mailId)
-    {
-        await _queryFactory.Query("Mail_Item").Where("MailId", mailId)
-                           .UpdateAsync(new { IsReceived = false });
-
-        await _queryFactory.Query("Mail_Data").Where("MailId", mailId)
-                           .UpdateAsync(new { HasItem = true });
-    }
-
-    private async Task ReceiveMailItemRollBack(Int64 userId, List<ItemInfo> itemInfo)
+    private async Task InsertMailItemToUserItemRollBack(Int64 userId, List<ItemInfo> itemInfo)
     {
         foreach (ItemInfo delitem in itemInfo)
         {

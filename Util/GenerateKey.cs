@@ -26,4 +26,9 @@ public static class GenerateKey
     {
         return new string("LobbyUserCount");
     }
+
+    public static string LobbyUserListKey()
+    {
+        return new string("LobbyUserList");
+    }
 }

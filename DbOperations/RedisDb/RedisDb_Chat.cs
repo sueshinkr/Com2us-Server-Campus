@@ -79,7 +79,9 @@ public partial class RedisDb : IRedisDb
 
     private async Task<ErrorCode> UpdateUserLobbyData(Int64 userId, Int64 lobbyNum)
     {
-        var lobbyUserListRedis = new RedisDictionary<Int64, Int64>(_redisConn, "LobbyUserList", null);
+        var key = GenerateKey.LobbyUserListKey();
+
+        var lobbyUserListRedis = new RedisDictionary<Int64, Int64>(_redisConn, key, null);
 
         await lobbyUserListRedis.SetAsync(userId, lobbyNum, TimeSpan.FromDays(1));
 
@@ -156,7 +158,7 @@ public partial class RedisDb : IRedisDb
 
     private async Task<Tuple<ErrorCode, Int64>> LoadUserCurrentLobby(Int64 userId)
     {
-        var key = GenerateKey.LobbyUserCountKey();
+        var key = GenerateKey.LobbyUserListKey();
 
         var lobbyUserListRedis = new RedisDictionary<Int64, Int64>(_redisConn, key, null);
         var userLobbyNumRedisResult = await lobbyUserListRedis.GetAsync(userId);
