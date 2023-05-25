@@ -21,6 +21,8 @@ ASP.NET Core와 C#을 활용하였으며, MySQL과 Redis를 사용
 
 컨텐츠 구현에 필요한 기능들을 개별 컨트롤러로 구분해서 사용    
 DI 패턴을 활용하였으며, 사용되는 서비스별로 생명주기를 다르게 하여 관리    
+MySQL은 SQLKata 라이브러리를 활용 [깃허브 링크](https://github.com/sqlkata/querybuilder)    
+Redis는 CloudStructures 라이브러리를 활용 [깃허브 링크](https://github.com/xin9le/CloudStructures)    
 로그는 ZLogger 라이브러리를 활용 [깃허브 링크](https://github.com/Cysharp/ZLogger)    
 유니크 ID값 생성에는 트위터의 Snowflake와 유사한 로직을 가지는 IdGen 라이브러리를 사용 [깃허브 링크](https://github.com/RobThree/IdGen)    
 
