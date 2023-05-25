@@ -34,6 +34,8 @@ MySQL의 DB는 AccountDB / GameDB / MasterDB로 구성
 ![ERD](https://github.com/sueshinkr/Com2us-Server-Campus/assets/100945798/bc84ceaa-6763-4493-84c1-a81161fbfac3)
 
 
+미들웨어를 사용하여 계정생성, 로그인 이외의 요청시에는 로그인시 발급받은 인증토큰을 확인    
+또한 같은 유저의 요청이 동시에 처리될 수 없도록 락 설정
 
 ## 구현 항목 상세
 
